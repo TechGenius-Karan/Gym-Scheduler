@@ -33,7 +33,7 @@ router.get(
   (req, res) => {
     const user = req.user
     const token = jwt.sign(
-      { id: user._id, email: user.email, isNew: user.isNew },
+      { id: user._id, email: user.email, isNew: user.firstLogin },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )

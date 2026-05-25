@@ -34,7 +34,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     if (isFirstSave) {
-      await User.findByIdAndUpdate(req.user.id, { isNew: false })
+      await User.findByIdAndUpdate(req.user.id, { firstLogin: false })
     }
 
     res.json(schedule)

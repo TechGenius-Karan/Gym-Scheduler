@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   name: { type: String, required: true },
   picture: { type: String, default: '' },
-  isNew: { type: Boolean, default: true },
+  firstLogin: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
 })
 
@@ -19,12 +19,12 @@ class User {
       email: profile.emails[0].value,
       name: profile.displayName,
       picture: profile.photos?.[0]?.value ?? '',
-      isNew: true,
+      firstLogin: true,
     })
   }
 
   markReturning() {
-    this.isNew = false
+    this.firstLogin = false
     return this.save()
   }
 
@@ -34,7 +34,7 @@ class User {
       name: this.name,
       email: this.email,
       picture: this.picture,
-      isNew: this.isNew,
+      isNew: this.firstLogin,
     }
   }
 }
