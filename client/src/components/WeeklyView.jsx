@@ -1,0 +1,16 @@
+import { useSchedule } from '../context/ScheduleContext'
+import DayCard from './DayCard'
+
+export default function WeeklyView() {
+  const { myScheduleData } = useSchedule()
+
+  if (!myScheduleData?.days) return null
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {myScheduleData.days.map(day => (
+        <DayCard key={day.day} day={day} />
+      ))}
+    </div>
+  )
+}

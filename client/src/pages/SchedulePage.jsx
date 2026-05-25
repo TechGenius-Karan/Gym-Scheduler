@@ -4,6 +4,7 @@ import { getSchedule, saveSchedule } from '../api/scheduleApi'
 import WelcomeBanner from '../components/WelcomeBanner'
 import SplitPicker from '../components/SplitPicker'
 import TemplateView from '../components/TemplateView'
+import WeeklyView from '../components/WeeklyView'
 import ScheduleActionBar from '../components/ScheduleActionBar'
 
 export default function SchedulePage() {
@@ -54,9 +55,7 @@ export default function SchedulePage() {
 
       {activeView === 'splitPicker' && <SplitPicker />}
       {activeView === 'template' && <TemplateView />}
-      {activeView === 'mySchedule' && (
-        <p className="text-gray-500 text-sm">Weekly schedule view coming in Phase 6.</p>
-      )}
+      {activeView === 'mySchedule' && <WeeklyView />}
 
       <ScheduleActionBar onSave={handleSave} saving={saving} saveError={saveError} />
     </main>

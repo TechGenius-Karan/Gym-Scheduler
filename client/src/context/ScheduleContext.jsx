@@ -12,6 +12,8 @@ export function ScheduleProvider({ children }) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
   const [loadingTemplate, setLoadingTemplate] = useState(false)
 
+  // ── template actions ──────────────────────────────────────────────
+
   async function selectTemplate(id) {
     setLoadingTemplate(true)
     try {
@@ -48,6 +50,48 @@ export function ScheduleProvider({ children }) {
     setActiveView('mySchedule')
   }
 
+  // ── schedule mutation helpers ─────────────────────────────────────
+
+  function updateDay(dayName, updates) {
+    setMyScheduleData(prev => ({
+      ...prev,
+      days: prev.days.map(d => d.day === dayName ? { ...d, ...updates } : d),
+    }))
+  }
+
+  function addExercise(dayName) {
+    setMyScheduleData(prev => ({
+      ...prev,
+      days: prev.days.map(d =>
+        d.day === dayName
+          ? { ...d, exercises: [...d.exercises, { id: crypto.randomUUID(), name: '', sets: 3, reps: 10 }] }
+          : d
+      ),
+    }))
+  }
+
+  function removeExercise(dayName, exerciseId) {
+    setMyScheduleData(prev => ({
+      ...prev,
+      days: prev.days.map(d =>
+        d.day === dayName
+          ? { ...d, exercises: d.exercises.filter(ex => ex.id !== exerciseId) }
+          : d
+      ),
+    }))
+  }
+
+  function updateExercise(dayName, exerciseId, updates) {
+    setMyScheduleData(prev => ({
+      ...prev,
+      days: prev.days.map(d =>
+        d.day === dayName
+          ? { ...d, exercises: d.exercises.map(ex => ex.id === exerciseId ? { ...ex, ...updates } : ex) }
+          : d
+      ),
+    }))
+  }
+
   return (
     <ScheduleContext.Provider value={{
       activeView, setActiveView,
@@ -58,6 +102,10 @@ export function ScheduleProvider({ children }) {
       selectTemplate,
       copyToMySchedule,
       startFresh,
+      updateDay,
+      addExercise,
+      removeExercise,
+      updateExercise,
     }}>
       {children}
     </ScheduleContext.Provider>
