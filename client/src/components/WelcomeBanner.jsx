@@ -32,7 +32,7 @@ export default function WelcomeBanner() {
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-white">{greeting}</h2>
       {workoutLine && (
-        <p className="text-gray-400 mt-1 text-sm">{workoutLine}</p>
+        <p className="mt-1 text-base font-semibold text-cyan-400 tracking-wide">{workoutLine}</p>
       )}
     </div>
   )

@@ -6,7 +6,7 @@ export default function DayCard({ day, isToday }) {
 
   const baseCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
     isToday
-      ? 'bg-gray-900 border-indigo-500/50 ring-1 ring-indigo-500/20'
+      ? 'bg-gray-900 border-indigo-400 border-2 ring-2 ring-indigo-500/40'
       : 'bg-gray-900 border-gray-800'
   }`
 
