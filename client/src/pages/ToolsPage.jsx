@@ -36,7 +36,7 @@ export default function ToolsPage() {
             </div>
 
             <div className="flex gap-3">
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
                 <label className="text-xs text-gray-400">Weight (kg)</label>
                 <input
                   type="number"
@@ -44,11 +44,11 @@ export default function ToolsPage() {
                   onChange={e => setWeight(e.target.value)}
                   placeholder="80"
                   min={0}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
                              placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition"
                 />
               </div>
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
                 <label className="text-xs text-gray-400">Reps</label>
                 <input
                   type="number"
@@ -56,7 +56,7 @@ export default function ToolsPage() {
                   onChange={e => setReps(e.target.value)}
                   placeholder="8"
                   min={1}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
                              placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition"
                 />
               </div>
