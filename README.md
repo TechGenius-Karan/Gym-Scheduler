@@ -9,9 +9,11 @@ A web app for planning your weekly gym split. Pick a training template, customis
 - **Google Sign-In** — one click, no passwords
 - **Training templates** — choose from PPL, Upper/Lower, Full Body, or Bro Split as a starting point
 - **Fully editable schedule** — rename splits, add/remove exercises, tweak sets and reps inline
-- **Rest day toggle** — mark any day as a rest day with one click
+- **Drag to reorder** — drag exercises up and down within a day to reorder them
+- **Rest day toggle** — mark any day as a rest day; rest cards show a personalised message using your name
 - **Today highlight** — your current day is always visually marked on the schedule
 - **1RM Calculator** — estimate your one-rep max using the Epley formula
+- **Calorie & Protein Estimator** — calculates daily calorie and protein targets using the Mifflin-St Jeor formula, with support for different goals (cut / maintain / bulk) and cm or ft/in height input
 - **Auto-save state** — edits stay in memory until you explicitly save
 
 ---
