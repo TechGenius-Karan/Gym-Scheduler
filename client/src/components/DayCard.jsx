@@ -1,11 +1,23 @@
 import { useSchedule } from '../context/ScheduleContext'
 import { useAuth } from '../context/AuthContext'
 import ExerciseRow from './ExerciseRow'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 export default function DayCard({ day, isToday }) {
-  const { updateDay, addExercise } = useSchedule()
+  const { updateDay, addExercise, reorderExercises } = useSchedule()
   const { user } = useAuth()
   const firstName = user?.name?.split(' ')[0] ?? null
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = day.exercises.findIndex(ex => ex.id === active.id)
+    const newIndex = day.exercises.findIndex(ex => ex.id === over.id)
+    reorderExercises(day.day, oldIndex, newIndex)
+  }
 
   const baseCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
     isToday
@@ -84,15 +96,20 @@ export default function DayCard({ day, isToday }) {
       {day.exercises.length > 0 ? (
         <div className="flex flex-col gap-2.5 mt-1">
           <div className="flex items-center gap-2 text-xs text-gray-600">
+            <span className="w-3" />
             <span className="flex-1">Exercise</span>
             <span className="w-10 text-center">Sets</span>
             <span className="text-gray-700">×</span>
             <span className="w-10 text-center">Reps</span>
             <span className="w-5" />
           </div>
-          {day.exercises.map(ex => (
-            <ExerciseRow key={ex.id} dayName={day.day} exercise={ex} />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={day.exercises.map(ex => ex.id)} strategy={verticalListSortingStrategy}>
+              {day.exercises.map(ex => (
+                <ExerciseRow key={ex.id} dayName={day.day} exercise={ex} />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       ) : (
         <p className="text-gray-700 text-xs mt-1">No exercises yet.</p>

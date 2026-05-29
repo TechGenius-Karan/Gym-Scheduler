@@ -92,6 +92,19 @@ export function ScheduleProvider({ children }) {
     }))
   }
 
+  function reorderExercises(dayName, oldIndex, newIndex) {
+    setMyScheduleData(prev => ({
+      ...prev,
+      days: prev.days.map(d => {
+        if (d.day !== dayName) return d
+        const exercises = [...d.exercises]
+        const [moved] = exercises.splice(oldIndex, 1)
+        exercises.splice(newIndex, 0, moved)
+        return { ...d, exercises }
+      }),
+    }))
+  }
+
   return (
     <ScheduleContext.Provider value={{
       activeView, setActiveView,
@@ -106,6 +119,7 @@ export function ScheduleProvider({ children }) {
       addExercise,
       removeExercise,
       updateExercise,
+      reorderExercises,
     }}>
       {children}
     </ScheduleContext.Provider>
