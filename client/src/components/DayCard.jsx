@@ -1,8 +1,11 @@
 import { useSchedule } from '../context/ScheduleContext'
+import { useAuth } from '../context/AuthContext'
 import ExerciseRow from './ExerciseRow'
 
 export default function DayCard({ day, isToday }) {
   const { updateDay, addExercise } = useSchedule()
+  const { user } = useAuth()
+  const firstName = user?.name?.split(' ')[0] ?? null
 
   const baseCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
     isToday
@@ -11,21 +14,40 @@ export default function DayCard({ day, isToday }) {
   }`
 
   if (day.isRest) {
+    const restCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
+      isToday
+        ? 'bg-gray-900/60 border-indigo-400/40 border-2 ring-2 ring-indigo-500/20'
+        : 'bg-gray-900/60 border-gray-800/50'
+    }`
+
     return (
-      <div className={baseCard}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-400">{day.day}</span>
-            {isToday && <span className="text-xs text-indigo-400 font-medium">Today</span>}
-          </div>
-          <button
-            onClick={() => updateDay(day.day, { isRest: false })}
-            className="text-xs px-2.5 py-1 rounded-full bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white transition"
-          >
-            Rest Day
-          </button>
+      <div className={restCard}>
+        {/* Header */}
+        <div className="flex items-center gap-2">
+          <span className="text-base font-semibold text-gray-500">{day.day}</span>
+          {isToday && <span className="text-sm text-indigo-400 font-medium">Today</span>}
         </div>
-        <p className="text-gray-700 text-xs">Click "Rest Day" to toggle back to a workout.</p>
+
+        {/* Rest body */}
+        <div className="flex flex-col items-center justify-center gap-2 py-5">
+          <span className="text-4xl">💤</span>
+          <span className="text-base font-semibold text-gray-400">Rest Day</span>
+          <p className="text-xs text-gray-600 text-center">
+            {isToday && firstName
+              ? `Rest up, ${firstName}. Recovery is gains.`
+              : isToday
+              ? 'Rest up. Recovery is gains.'
+              : 'Sleep well. Come back stronger.'}
+          </p>
+        </div>
+
+        {/* Toggle */}
+        <button
+          onClick={() => updateDay(day.day, { isRest: false })}
+          className="text-xs text-gray-600 border border-gray-700 rounded-lg px-3 py-1.5 hover:border-gray-500 hover:text-gray-400 transition self-center"
+        >
+          Set as workout day
+        </button>
       </div>
     )
   }
@@ -36,8 +58,8 @@ export default function DayCard({ day, isToday }) {
       {/* Header — day name + today badge + rest toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-400">{day.day}</span>
-          {isToday && <span className="text-xs text-indigo-400 font-medium">Today</span>}
+          <span className="text-base font-semibold text-gray-400">{day.day}</span>
+          {isToday && <span className="text-sm text-indigo-400 font-medium">Today</span>}
         </div>
         <button
           onClick={() => updateDay(day.day, { isRest: true })}

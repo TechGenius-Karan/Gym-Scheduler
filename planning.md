@@ -405,7 +405,94 @@ Gym-schedule-app/
 
 ---
 
-## Environment Variables Needed Before Building
+## v1.5 — Enhancements & New Features (Backlog)
+
+These are ideas to tackle after the core v1 is complete. Ordered roughly by complexity (simplest first). AI features are saved for v2.
+
+---
+
+### UI / UX Improvements
+
+#### 1. Toast Notifications
+Currently save success/failure is shown inline. Replace with a brief, auto-dismissing toast that slides in from the bottom corner. Applies to: schedule saved, exercise added, schedule cleared. Keeps the UI clean while still giving clear feedback.
+
+#### 2. Loading Skeletons
+Replace any spinner or blank-while-loading states with skeleton placeholder cards that mirror the shape of the real content. Makes the app feel faster and more polished, especially on first load.
+
+#### 3. Today Highlight on Day Card
+The app already detects today's weekday. Add a stronger visual treatment to the current day's card — a colored top border or accent ring — so it jumps out immediately in the weekly grid.
+
+#### 4. Rest Day Visual Badge
+When a day is toggled to Rest, show a distinct "Rest Day" badge or muted card style instead of just empty space. Makes it clear the rest is intentional, not an unfilled day.
+
+#### 5. Exercise Notes Field
+Add a small optional notes input per exercise (e.g. "pause reps", "superset with X", "drop set on last"). Stored as a `notes` string on the exercise object. Hidden by default; revealed by a small icon button to keep the UI uncluttered.
+
+#### 6. Collapsible Day Cards (Mobile)
+On small screens, collapse all day cards except today's by default. A tap expands them. Reduces scrolling on mobile significantly.
+
+#### 7. Drag-to-Reorder Exercises
+Let users drag exercises up and down within a day card to reorder them. Use `@dnd-kit/core` (lightweight, accessible). The order is preserved in the schedule array and saved with the rest of the schedule.
+
+#### 8. Split Name / Program Notes
+Let users give their current program a name (e.g. "PPL — Bulk Phase Q3") and a short description. Displayed at the top of the schedule page as a header. Stored as `programName` and `programNotes` on the schedule document.
+
+#### 9. Weekly Volume Summary
+Below the 7-day grid, show a small summary row: total sets per week, number of training days, and rest days. Helps users quickly sanity-check their volume without counting manually.
+
+#### 10. Empty State Illustration
+When a brand-new user lands on the schedule page before picking a split, show a simple SVG illustration with a clear call-to-action ("Pick a split to get started"). Better than a blank screen.
+
+---
+
+### New Tools
+
+#### 11. Plate Calculator
+User enters a target barbell weight; the tool calculates which plates to load on each side of the bar (assuming a standard 20 kg Olympic bar). Outputs a visual plate stack. Entirely client-side. Extremely useful at the gym when loading up quickly.
+
+#### 12. Macro / Calorie Estimator
+User enters bodyweight, height, age, sex, and goal (bulk / maintain / cut). App computes an estimated TDEE using the Mifflin-St Jeor formula and a simple activity multiplier, then splits it into a suggested macro breakdown (protein / carbs / fat in grams). All client-side, no API needed.
+
+#### 13. Rest Timer
+A simple countdown timer with preset durations (60s, 90s, 2m, 3m) and a custom input. Plays a short audio tone when it hits zero. Lives as a small floating widget or a dedicated card on the Tools page. Extremely useful mid-workout.
+
+#### 14. Wilks / DOTS Score Calculator
+Takes bodyweight and total lifted weight (or individual lifts), outputs a Wilks or DOTS score — a bodyweight-normalized strength metric used in powerlifting. Useful for intermediate/advanced lifters who want to compare strength across weight classes.
+
+#### 15. Bodyweight Tracker
+A simple log where users record their bodyweight over time with a date. Displays a minimal line chart (using a lightweight library like `recharts`). Stored in a new `bodyweightLogs` collection on the backend. Gives users a second reason to open the app regularly.
+
+---
+
+### Feature Ideas
+
+#### 16. Workout Completion Tracking
+A "Mark as done" checkbox on each day card that resets every Monday. Ticked days get a visual strikethrough or checkmark. Store completion state in localStorage first (no backend changes needed); can be synced to the server in a later pass. Gives users a satisfying sense of progress through the week.
+
+#### 17. Multiple Saved Programs
+Allow users to save more than one program (e.g. "Strength Block", "Hypertrophy Phase", "Cut Program") and switch between them. The active program is the one displayed on the schedule page. Stored as an array of schedules per user with a `isActive` flag. Requires a simple program switcher UI.
+
+#### 18. RPE Field per Exercise
+Add an optional RPE (Rate of Perceived Exertion, 1–10) field alongside sets and reps. Useful for auto-regulation training. Hidden by default like the notes field — shown only if the user wants it.
+
+#### 19. Export Schedule
+A button that generates a clean printable or shareable view of the weekly schedule — either a PDF (via `window.print()` + print stylesheet) or a shareable image (via `html-to-image`). No backend changes needed.
+
+#### 20. Keyboard Shortcuts
+Power-user shortcuts for the schedule page: `E` to focus the first editable field on today's card, `S` to save, `Escape` to cancel an edit. Documented in a small tooltip or help modal.
+
+#### 21. Motivational / Humorous Day Phrases
+Each day card shows a small personality-driven subtitle line beneath the split name — something relatable and gym-culture-aware. Examples:
+- Push day: "Chest day is the best day."
+- Pull day: "Back is the new chest."
+- Legs day: "Legs day 😩 let's get it."
+- Arms day: "Time to fill those sleeves."
+- Rest day: "Rest up, [name]. Recovery is gains."
+The phrase is determined by the split name (fuzzy match on keywords like "push", "legs", "pull", etc.). Falls back to a generic motivational line if no keyword matches. Phrases should feel genuine and relatable, not generic fitness-app filler. Rest day phrase uses the user's first name for a personal touch.
+
+---
+
+## v2 Features (Do Not Build Yet)
 
 ### `server/.env`
 ```
