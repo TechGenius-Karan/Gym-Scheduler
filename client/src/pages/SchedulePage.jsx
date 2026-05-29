@@ -12,16 +12,25 @@ function ScheduleSkeleton() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {[...Array(7)].map((_, i) => (
         <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+          {/* Header: day name + set rest button */}
           <div className="flex items-center justify-between">
-            <div className="h-3 w-16 bg-gray-800 rounded" />
-            <div className="h-5 w-14 bg-gray-800 rounded-full" />
+            <div className="h-5 w-20 bg-gray-800 rounded" />
+            <div className="h-6 w-16 bg-gray-800 rounded-full" />
           </div>
-          <div className="h-4 w-24 bg-gray-800 rounded" />
-          <div className="flex flex-col gap-2 mt-1">
+          {/* Split name */}
+          <div className="h-5 w-28 bg-gray-800 rounded" />
+          {/* Exercise rows */}
+          <div className="flex flex-col gap-2.5 mt-1">
             {[...Array(3)].map((_, j) => (
-              <div key={j} className="h-3 bg-gray-800 rounded w-full" />
+              <div key={j} className="flex items-center gap-2">
+                <div className="h-4 bg-gray-800 rounded flex-1" />
+                <div className="h-4 w-8 bg-gray-800 rounded" />
+                <div className="h-4 w-8 bg-gray-800 rounded" />
+              </div>
             ))}
           </div>
+          {/* Add exercise link */}
+          <div className="h-3 w-20 bg-gray-800 rounded" />
         </div>
       ))}
     </div>
