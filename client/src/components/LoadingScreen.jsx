@@ -3,7 +3,7 @@ export default function LoadingScreen() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-8">
 
       {/* Bicep image */}
-      <div className="bg-gray-800 rounded-3xl p-6 shadow-xl shadow-black/40">
+      <div className="bg-gray-950 rounded-3xl p-6">
         <img src="/bicep.png" alt="flexed bicep" className="w-40 h-40 object-contain" />
       </div>
 
