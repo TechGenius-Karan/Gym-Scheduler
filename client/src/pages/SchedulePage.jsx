@@ -6,6 +6,7 @@ import SplitPicker from '../components/SplitPicker'
 import TemplateView from '../components/TemplateView'
 import WeeklyView from '../components/WeeklyView'
 import ScheduleActionBar from '../components/ScheduleActionBar'
+import EmptyScheduleState from '../components/EmptyScheduleState'
 
 function ScheduleSkeleton() {
   return (
@@ -43,6 +44,7 @@ export default function SchedulePage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [showSplitPicker, setShowSplitPicker] = useState(false)
 
   useEffect(() => {
     getSchedule()
@@ -83,7 +85,10 @@ export default function SchedulePage() {
         <ScheduleSkeleton />
       ) : (
         <>
-          {activeView === 'splitPicker' && <SplitPicker />}
+          {activeView === 'splitPicker' && !myScheduleData && !showSplitPicker && (
+            <EmptyScheduleState onPickSplit={() => setShowSplitPicker(true)} />
+          )}
+          {activeView === 'splitPicker' && (myScheduleData || showSplitPicker) && <SplitPicker />}
           {activeView === 'template' && <TemplateView />}
           {activeView === 'mySchedule' && <WeeklyView />}
           <ScheduleActionBar onSave={handleSave} saving={saving} saveError={saveError} />
