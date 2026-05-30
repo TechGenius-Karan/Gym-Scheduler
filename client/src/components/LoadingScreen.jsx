@@ -2,8 +2,10 @@ export default function LoadingScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-8">
 
-      {/* Bicep emoji */}
-      <span className="text-9xl select-none" role="img" aria-label="flexed bicep">💪</span>
+      {/* Bicep image */}
+      <div className="bg-gray-800 rounded-3xl p-6 shadow-xl shadow-black/40">
+        <img src="/bicep.png" alt="flexed bicep" className="w-40 h-40 object-contain" />
+      </div>
 
       {/* Title + spinner row */}
       <div className="flex flex-col items-center gap-5">
