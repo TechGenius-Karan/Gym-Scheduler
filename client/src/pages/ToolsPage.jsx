@@ -12,7 +12,7 @@ const bmiPt = (bmiVal, r = BMI_R) => [
 const bmiArc = (fromBmi, toBmi) => {
   const [x1, y1] = bmiPt(fromBmi)
   const [x2, y2] = bmiPt(toBmi)
-  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${BMI_R} ${BMI_R} 0 0 0 ${x2.toFixed(2)} ${y2.toFixed(2)}`
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${BMI_R} ${BMI_R} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`
 }
 
 const BMI_ZONES = [
