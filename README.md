@@ -14,6 +14,7 @@ A web app for planning your weekly gym split. Pick a training template, customis
 - **Today highlight** — your current day is always visually marked on the schedule
 - **1RM Calculator** — estimate your one-rep max using the Epley formula
 - **Calorie & Protein Estimator** — calculates daily calorie and protein targets using the Mifflin-St Jeor formula, with support for different goals (cut / maintain / bulk) and cm or ft/in height input
+- **BMI Calculator** — animated semicircular gauge showing your Body Mass Index across WHO-standard zones (Underweight / Normal / Overweight / Obese), with kg/lbs and cm/ft+in input support
 - **Auto-save state** — edits stay in memory until you explicitly save
 
 ---
