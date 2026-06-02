@@ -3,8 +3,9 @@ import { useAuth } from '../context/AuthContext'
 import ExerciseRow from './ExerciseRow'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { getDayPhrase, getRestPhrase } from '../utils/dayPhrase'
 
-export default function DayCard({ day, isToday }) {
+export default function DayCard({ day, isToday, restIndex }) {
   const { updateDay, addExercise, reorderExercises } = useSchedule()
   const { user } = useAuth()
   const firstName = user?.name?.split(' ')[0] ?? null
@@ -45,11 +46,7 @@ export default function DayCard({ day, isToday }) {
           <span className="text-4xl">💤</span>
           <span className="text-base font-semibold text-gray-400">Rest Day</span>
           <p className="text-xs text-gray-600 text-center">
-            {isToday && firstName
-              ? `Rest up, ${firstName}. Recovery is gains.`
-              : isToday
-              ? 'Rest up. Recovery is gains.'
-              : 'Sleep well. Come back stronger.'}
+            {getRestPhrase(restIndex, firstName)}
           </p>
         </div>
 
@@ -91,6 +88,9 @@ export default function DayCard({ day, isToday }) {
         className="bg-transparent text-white font-bold text-base placeholder-gray-700
                    border-b border-transparent focus:border-gray-600 focus:outline-none pb-1 transition w-full"
       />
+      {getDayPhrase(day.splitName) && (
+        <p className="text-xs text-gray-600 -mt-2">{getDayPhrase(day.splitName)}</p>
+      )}
 
       {/* Exercise list */}
       {day.exercises.length > 0 ? (
