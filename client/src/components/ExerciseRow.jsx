@@ -27,7 +27,7 @@ export default function ExerciseRow({ dayName, exercise }) {
       <button
         {...attributes}
         {...listeners}
-        className="text-gray-500 hover:text-gray-300 transition cursor-grab active:cursor-grabbing shrink-0 touch-none opacity-0 group-hover:opacity-100"
+        className="text-gray-500 hover:text-gray-300 transition cursor-grab active:cursor-grabbing shrink-0 touch-none sm:opacity-0 sm:group-hover:opacity-100"
         aria-label="Drag to reorder"
         tabIndex={-1}
       >
@@ -62,7 +62,7 @@ export default function ExerciseRow({ dayName, exercise }) {
       />
       <button
         onClick={() => removeExercise(dayName, exercise.id)}
-        className="text-gray-700 hover:text-red-400 transition ml-1 opacity-0 group-hover:opacity-100 text-lg leading-none"
+        className="text-gray-500 hover:text-red-400 transition ml-1 sm:opacity-0 sm:group-hover:opacity-100 text-lg leading-none"
         aria-label="Remove exercise"
       >
         ×

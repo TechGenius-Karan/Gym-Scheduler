@@ -274,7 +274,7 @@ export default function ToolsPage() {
               <select
                 value={activity}
                 onChange={e => setActivity(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition w-full"
               >
                 <option value="1.2">Sedentary (little/no exercise)</option>
                 <option value="1.375">Lightly active (1–3x / week)</option>
