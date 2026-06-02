@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import ExerciseRow from './ExerciseRow'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { getDayPhrase, getRestPhrase } from '../utils/dayPhrase'
+import { getRestPhrase } from '../utils/dayPhrase'
 
 export default function DayCard({ day, isToday, restIndex }) {
   const { updateDay, addExercise, reorderExercises } = useSchedule()
@@ -88,10 +88,6 @@ export default function DayCard({ day, isToday, restIndex }) {
         className="bg-transparent text-white font-bold text-base placeholder-gray-700
                    border-b border-transparent focus:border-gray-600 focus:outline-none pb-1 transition w-full"
       />
-      {getDayPhrase(day.splitName, day.day) && (
-        <p className="text-xs text-gray-600 -mt-2">{getDayPhrase(day.splitName, day.day)}</p>
-      )}
-
       {/* Exercise list */}
       {day.exercises.length > 0 ? (
         <div className="flex flex-col gap-2.5 mt-1">

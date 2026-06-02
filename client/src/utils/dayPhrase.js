@@ -113,8 +113,21 @@ const PHRASES = [
   },
 ]
 
-// Uses the day name as a stable seed so the same day always shows the same phrase,
-// but different days with the same split type can show different phrases.
+const GENERIC_PHRASES = [
+  "Let's make future you proud.",
+  "Just show up. We'll handle the rest.",
+  'A bad workout still counts.',
+  'One workout closer.',
+  'Consistency beats motivation.',
+  "Today's effort, tomorrow's results.",
+  "You came. That's the hard part.",
+  "Progress is boring until it isn't.",
+]
+
+// Detects combined split names like "Chest/Back", "Push & Pull", "Upper + Lower"
+const COMBINED_SPLIT = /[\/&+]|\band\b/
+
+// Uses the day name as a stable seed so the phrase is consistent per day.
 function stableIndex(seed, length) {
   let hash = 0
   for (let i = 0; i < seed.length; i++) {
@@ -124,14 +137,19 @@ function stableIndex(seed, length) {
 }
 
 export function getDayPhrase(splitName, dayName = '') {
-  if (!splitName?.trim()) return null
+  if (!splitName?.trim()) return GENERIC_PHRASES[stableIndex(dayName, GENERIC_PHRASES.length)]
   const lower = splitName.toLowerCase()
-  for (const { keywords, phrases } of PHRASES) {
-    if (keywords.some(k => lower.includes(k))) {
-      return phrases[stableIndex(dayName, phrases.length)]
+
+  // Combined splits (e.g. "Chest/Back") → generic
+  if (!COMBINED_SPLIT.test(lower)) {
+    for (const { keywords, phrases } of PHRASES) {
+      if (keywords.some(k => lower.includes(k))) {
+        return phrases[stableIndex(dayName, phrases.length)]
+      }
     }
   }
-  return null
+
+  return GENERIC_PHRASES[stableIndex(dayName, GENERIC_PHRASES.length)]
 }
 
 const REST_PHRASES = [
