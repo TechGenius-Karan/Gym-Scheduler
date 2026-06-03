@@ -496,6 +496,112 @@ The phrase is determined by the split name (fuzzy match on keywords like "push",
 
 ---
 
+## Implementation Plan — Multiple Programs Feature
+
+All new files already exist (commented out). The plan below is strictly what needs to happen to make them live.
+
+---
+
+### Step 1 — Uncomment the server files
+
+- `server/models/Program.js` — remove the `/* */` wrapper. No logic changes needed.
+- `server/routes/programs.js` — remove the `/* */` wrapper. No logic changes needed.
+- `server/index.js` — add `app.use('/api/programs', require('./routes/programs'))` after the schedule route.
+
+---
+
+### Step 2 — Uncomment the client API file
+
+- `client/src/api/programApi.js` — remove the `/* */` wrapper. No logic changes needed.
+
+---
+
+### Step 3 — Update `ScheduleContext.jsx`
+
+This is where things went wrong last time. Be precise:
+
+**Imports** — change the first two lines to:
+```js
+import { createContext, useContext, useState, useMemo } from 'react'
+import { getTemplate } from '../api/templateApi'
+import {
+  activateProgram, saveProgram, createProgram,
+  getProgram, renameProgram, deleteProgram,
+} from '../api/programApi'
+```
+
+**New state** — add directly after the existing `loadingTemplate` state line:
+```js
+const [programs, setPrograms] = useState([])
+const [activeProgramId, setActiveProgramId] = useState(null)
+const [savedScheduleData, setSavedScheduleData] = useState(null)
+
+const hasUnsavedChanges = useMemo(() => {
+  if (!myScheduleData?.days || !savedScheduleData?.days) return false
+  return JSON.stringify(myScheduleData.days) !== JSON.stringify(savedScheduleData.days)
+}, [myScheduleData, savedScheduleData])
+```
+
+**New functions** — add a new `// ── program actions` section after `reorderExercises`. Five functions total:
+
+1. `saveActiveProgram()` — if `activeProgramId` exists: calls `saveProgram(activeProgramId, days)`, updates both `myScheduleData` and `savedScheduleData` with the server response, patches the program name in the `programs` list. If no `activeProgramId` (first-ever save): calls `createProgram('My Schedule', days)`, sets `activeProgramId`, sets both data states, sets `programs` list to the single created entry.
+
+2. `switchProgram(id)` — calls `activateProgram(id)`, sets `activeProgramId`, sets both data states to the returned program, sets `activeView('mySchedule')`, updates `programs` list to reflect new `isActive` flags.
+
+3. `createNewProgram(name, days)` — calls `createProgram(name, days)`, sets `activeProgramId`, sets both data states, sets `activeView('mySchedule')`, appends to `programs` list with all others marked inactive.
+
+4. `renameProgramById(id, name)` — calls `renameProgram(id, name)`, patches the name in the `programs` list.
+
+5. `deleteProgramById(id)` — calls `deleteProgram(id)`. If response has `newActiveId`: calls `getProgram(newActiveId)`, loads it into both data states, updates `programs` list. If deleted program was active and no `newActiveId`: clears all data states, sets `activeView('splitPicker')`, empties `programs`. If deleted program was not active: just removes it from `programs` list.
+
+**Provider value** — add all new items:
+```
+programs, setPrograms,
+activeProgramId, setActiveProgramId,
+savedScheduleData, setSavedScheduleData,
+hasUnsavedChanges,
+saveActiveProgram,
+switchProgram,
+createNewProgram,
+renameProgramById,
+deleteProgramById,
+```
+
+---
+
+### Step 4 — Update `SchedulePage.jsx`
+
+Three targeted changes only — the rest of the file stays identical:
+
+1. **Swap the API import**: remove `import { getSchedule, saveSchedule } from '../api/scheduleApi'`, add `import { getActiveProgram, getPrograms } from '../api/programApi'`.
+
+2. **Expand the context destructure**: add `setActiveProgramId, setSavedScheduleData, setPrograms, saveActiveProgram` alongside the existing destructured values.
+
+3. **Replace the `useEffect`**: instead of calling `getSchedule()`, call `Promise.all([getActiveProgram(), getPrograms()])`. On success: call `setPrograms(all)`, and if active program exists set `setActiveProgramId`, `setSavedScheduleData`, `setMyScheduleData`, `setActiveView('mySchedule')`. If null, fall through to `setActiveView('splitPicker')`.
+
+4. **Replace `handleSave` body**: remove the `saveSchedule(days)` call. Instead call `await saveActiveProgram()` (which is now a context function that handles both create-on-first-save and update-existing). The `setSaving`, `setSaveSuccess`, `setSaveError` states stay exactly as they are around it.
+
+5. **Add `<ProgramBar />`** import and render it above the schedule content (below `<WelcomeBanner />`), only rendered once the schedule has loaded (inside the non-loading branch). It self-hides via `if (!programs.length) return null` when the user has no saved programs yet (new user flow).
+
+---
+
+### Step 5 — Uncomment `ProgramBar.jsx` and `NewProgramModal.jsx`
+
+Remove the `/* */` wrappers from both files. No logic changes needed. `ProgramBar` reads from context so it just works once the context changes in Step 3 are in place.
+
+---
+
+### What does NOT change
+
+- `WeeklyView`, `DayCard`, `ExerciseRow` — untouched. They read `myScheduleData.days` from context, which is still the same shape.
+- `ScheduleActionBar` — untouched. Save button still calls `onSave` from SchedulePage.
+- `SplitPicker`, `TemplateView` — untouched. The change-split flow still works identically.
+- `Navbar` — untouched for now. ProgramBar lives on the schedule page above the grid.
+- `WelcomeBanner` — untouched. Today's notification reads from `myScheduleData.days`.
+- Existing user data — safe. The migration in `programs.js` (`migrateIfNeeded`) wraps the old Schedule into a Program called "My Schedule" on first request. The user sees their existing data immediately.
+
+---
+
 ## v2 Features (Do Not Build Yet)
 
 ### `server/.env`

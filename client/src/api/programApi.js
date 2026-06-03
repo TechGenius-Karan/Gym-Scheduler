@@ -1,4 +1,3 @@
-/*
 const API = import.meta.env.VITE_API_URL
 
 function authHeaders() {
@@ -70,4 +69,3 @@ export async function deleteProgram(id) {
   if (!res.ok) throw new Error('Failed to delete program')
   return res.json()
 }
-*/

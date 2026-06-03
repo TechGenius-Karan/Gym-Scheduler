@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useSchedule } from '../context/ScheduleContext'
-import { getSchedule, saveSchedule } from '../api/scheduleApi'
+import { getActiveProgram, getPrograms } from '../api/programApi'
 import WelcomeBanner from '../components/WelcomeBanner'
+import ProgramBar from '../components/ProgramBar'
 import SplitPicker from '../components/SplitPicker'
 import TemplateView from '../components/TemplateView'
 import WeeklyView from '../components/WeeklyView'
@@ -39,7 +40,12 @@ function ScheduleSkeleton() {
 }
 
 export default function SchedulePage() {
-  const { activeView, setActiveView, setMyScheduleData, myScheduleData } = useSchedule()
+  const {
+    activeView, setActiveView,
+    myScheduleData, setMyScheduleData,
+    setActiveProgramId, setSavedScheduleData, setPrograms,
+    saveActiveProgram,
+  } = useSchedule()
   const [scheduleLoading, setScheduleLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -47,10 +53,13 @@ export default function SchedulePage() {
   const [showSplitPicker, setShowSplitPicker] = useState(false)
 
   useEffect(() => {
-    getSchedule()
-      .then(schedule => {
-        if (schedule) {
-          setMyScheduleData(schedule)
+    Promise.all([getActiveProgram(), getPrograms()])
+      .then(([active, all]) => {
+        setPrograms(all)
+        if (active) {
+          setActiveProgramId(active._id)
+          setSavedScheduleData(active)
+          setMyScheduleData(active)
           setActiveView('mySchedule')
         } else {
           setActiveView('splitPicker')
@@ -66,8 +75,7 @@ export default function SchedulePage() {
     setSaveError(null)
     setSaveSuccess(false)
     try {
-      const saved = await saveSchedule(myScheduleData.days)
-      setMyScheduleData(saved)
+      await saveActiveProgram()
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
     } catch {
@@ -85,6 +93,7 @@ export default function SchedulePage() {
         <ScheduleSkeleton />
       ) : (
         <>
+          <ProgramBar />
           {activeView === 'splitPicker' && !myScheduleData && !showSplitPicker && (
             <EmptyScheduleState onPickSplit={() => setShowSplitPicker(true)} />
           )}

@@ -1,4 +1,3 @@
-/*
 const router = require('express').Router()
 const Program = require('../models/Program')
 const Schedule = require('../models/Schedule')
@@ -69,7 +68,6 @@ router.post('/', authMiddleware, async (req, res) => {
     if (isFirst) {
       program.isActive = true
     } else {
-      // Activate this new program, deactivate others
       await Program.updateMany({ userId: req.user.id }, { isActive: false })
       program.isActive = true
     }
@@ -100,7 +98,6 @@ router.put('/:id', authMiddleware, async (req, res) => {
     program.updatedAt = new Date()
     await program.save()
 
-    // Mark user as no longer new on first save
     const user = await User.findById(req.user.id)
     if (user?.firstLogin) {
       await User.findByIdAndUpdate(req.user.id, { firstLogin: false })
@@ -165,4 +162,3 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 })
 
 module.exports = router
-*/
