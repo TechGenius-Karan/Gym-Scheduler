@@ -1,3 +1,4 @@
+/*
 const mongoose = require('mongoose')
 const { v4: uuidv4 } = require('uuid')
 const { exerciseSchema } = require('./Exercise')
@@ -64,3 +65,5 @@ programSchema.loadClass(Program)
 const ProgramModel = mongoose.model('Program', programSchema)
 
 module.exports = ProgramModel
+
+*/

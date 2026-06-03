@@ -1,3 +1,4 @@
+/*
 import { useEffect, useRef, useState } from 'react'
 import { useSchedule } from '../context/ScheduleContext'
 import NewProgramModal from './NewProgramModal'
@@ -261,3 +262,5 @@ export default function ProgramBar() {
     </div>
   )
 }
+
+*/
