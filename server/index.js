@@ -14,6 +14,7 @@ app.use(passport.initialize())
 
 app.use('/auth', require('./routes/auth'))
 app.use('/api/schedule', require('./routes/schedule'))
+app.use('/api/programs', require('./routes/programs'))
 app.use('/api/templates', require('./routes/templates'))
 
 const PORT = process.env.PORT || 5000

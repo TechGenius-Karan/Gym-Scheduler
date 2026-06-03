@@ -470,7 +470,11 @@ A simple log where users record their bodyweight over time with a date. Displays
 A "Mark as done" checkbox on each day card that resets every Monday. Ticked days get a visual strikethrough or checkmark. Store completion state in localStorage first (no backend changes needed); can be synced to the server in a later pass. Gives users a satisfying sense of progress through the week.
 
 #### 17. Multiple Saved Programs
-Allow users to save more than one program (e.g. "Strength Block", "Hypertrophy Phase", "Cut Program") and switch between them. The active program is the one displayed on the schedule page. Stored as an array of schedules per user with a `isActive` flag. Requires a simple program switcher UI.
+Allow users to save more than one named program (e.g. "Bulk — PPL", "Cut Phase", "Strength Block") and switch between them freely. A user's training changes across phases — they shouldn't have to rebuild their schedule from scratch every time they switch goals.
+
+A **Program Bar** sits at the top of the schedule page showing the active program name with a dropdown to switch between saved programs and a "+ New Program" button. Creating a new program follows the same flow as the current new-user experience: pick a template, duplicate an existing program, or start fresh — then give it a name. Switching programs loads that program's schedule into the page. If there are unsaved changes when switching, the user is prompted to save or discard first.
+
+Programs can be renamed and deleted via a small options menu. Deleting the active program auto-activates the next available one; if it was the last program, the SplitPicker opens again. The 7-day grid, inline editing, and Save button all behave exactly as they do today — they just operate on whichever program is currently active. Under the hood, the `schedules` collection becomes a `programs` collection with many documents per user, each carrying a `name`, `isActive` flag, and the same `days` array as today.
 
 #### 18. RPE Field per Exercise
 Add an optional RPE (Rate of Perceived Exertion, 1–10) field alongside sets and reps. Useful for auto-regulation training. Hidden by default like the notes field — shown only if the user wants it.
