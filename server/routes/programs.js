@@ -1,3 +1,4 @@
+/*
 const router = require('express').Router()
 const Program = require('../models/Program')
 const Schedule = require('../models/Schedule')
@@ -164,3 +165,4 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 })
 
 module.exports = router
+*/

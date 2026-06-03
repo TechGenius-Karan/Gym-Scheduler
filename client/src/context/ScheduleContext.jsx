@@ -1,9 +1,5 @@
-import { createContext, useContext, useState, useMemo } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { getTemplate } from '../api/templateApi'
-import {
-  activateProgram, saveProgram, createProgram,
-  getProgram, renameProgram, deleteProgram,
-} from '../api/programApi'
 
 const BLANK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -15,16 +11,6 @@ export function ScheduleProvider({ children }) {
   const [myScheduleData, setMyScheduleData] = useState(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState(null)
   const [loadingTemplate, setLoadingTemplate] = useState(false)
-
-  // ── programs state ────────────────────────────────────────────────
-  const [programs, setPrograms] = useState([])
-  const [activeProgramId, setActiveProgramId] = useState(null)
-  const [savedScheduleData, setSavedScheduleData] = useState(null)
-
-  const hasUnsavedChanges = useMemo(() => {
-    if (!myScheduleData?.days || !savedScheduleData?.days) return false
-    return JSON.stringify(myScheduleData.days) !== JSON.stringify(savedScheduleData.days)
-  }, [myScheduleData, savedScheduleData])
 
   // ── template actions ──────────────────────────────────────────────
 
@@ -106,77 +92,6 @@ export function ScheduleProvider({ children }) {
     }))
   }
 
-  // ── program actions ───────────────────────────────────────────────
-
-  async function saveActiveProgram() {
-    if (!myScheduleData?.days) return
-    if (activeProgramId) {
-      const saved = await saveProgram(activeProgramId, myScheduleData.days)
-      setMyScheduleData(saved)
-      setSavedScheduleData(saved)
-      setPrograms(prev => prev.map(p => p._id === activeProgramId ? { ...p, updatedAt: saved.updatedAt } : p))
-      return saved
-    } else {
-      // First-ever save — create the program with a default name
-      const created = await createProgram('My Schedule', myScheduleData.days)
-      setActiveProgramId(created._id)
-      setMyScheduleData(created)
-      setSavedScheduleData(created)
-      setPrograms([{ _id: created._id, name: created.name, isActive: true, updatedAt: created.updatedAt, createdAt: created.createdAt }])
-      return created
-    }
-  }
-
-  async function switchProgram(id) {
-    const program = await activateProgram(id)
-    setActiveProgramId(program._id)
-    setMyScheduleData(program)
-    setSavedScheduleData(program)
-    setActiveView('mySchedule')
-    setPrograms(prev => prev.map(p => ({ ...p, isActive: p._id === program._id })))
-  }
-
-  async function createNewProgram(name, days) {
-    const program = await createProgram(name, days)
-    setActiveProgramId(program._id)
-    setMyScheduleData(program)
-    setSavedScheduleData(program)
-    setActiveView('mySchedule')
-    setPrograms(prev => [
-      ...prev.map(p => ({ ...p, isActive: false })),
-      { _id: program._id, name: program.name, isActive: true, updatedAt: program.updatedAt, createdAt: program.createdAt },
-    ])
-    return program
-  }
-
-  async function renameProgramById(id, name) {
-    const result = await renameProgram(id, name)
-    setPrograms(prev => prev.map(p => p._id === id ? { ...p, name: result.name } : p))
-  }
-
-  async function deleteProgramById(id) {
-    const wasActive = id === activeProgramId
-    const result = await deleteProgram(id)
-    const updatedPrograms = programs.filter(p => p._id !== id)
-
-    if (result.newActiveId) {
-      const next = await getProgram(result.newActiveId)
-      setActiveProgramId(next._id)
-      setMyScheduleData(next)
-      setSavedScheduleData(next)
-      setActiveView('mySchedule')
-      setPrograms(updatedPrograms.map(p => ({ ...p, isActive: p._id === next._id })))
-    } else if (wasActive) {
-      setActiveProgramId(null)
-      setMyScheduleData(null)
-      setSavedScheduleData(null)
-      setActiveView('splitPicker')
-      setPrograms([])
-    } else {
-      setPrograms(updatedPrograms)
-    }
-  }
-
   function reorderExercises(dayName, oldIndex, newIndex) {
     setMyScheduleData(prev => ({
       ...prev,
@@ -205,16 +120,6 @@ export function ScheduleProvider({ children }) {
       removeExercise,
       updateExercise,
       reorderExercises,
-      // programs
-      programs, setPrograms,
-      activeProgramId, setActiveProgramId,
-      savedScheduleData, setSavedScheduleData,
-      hasUnsavedChanges,
-      saveActiveProgram,
-      switchProgram,
-      createNewProgram,
-      renameProgramById,
-      deleteProgramById,
     }}>
       {children}
     </ScheduleContext.Provider>

@@ -1,3 +1,4 @@
+/*
 import { useEffect, useRef, useState } from 'react'
 import { useSchedule } from '../context/ScheduleContext'
 import NewProgramModal from './NewProgramModal'
@@ -102,8 +103,6 @@ export default function ProgramBar() {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 flex-wrap">
-
-        {/* Program switcher dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => { setDropdownOpen(o => !o); setPendingId(null) }}
@@ -118,7 +117,6 @@ export default function ProgramBar() {
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
-
           {dropdownOpen && (
             <div className="absolute left-0 top-full mt-1.5 z-20 min-w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl overflow-hidden">
               {programs.map(p => (
@@ -142,18 +140,8 @@ export default function ProgramBar() {
                     <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-red-900/20">
                       <span className="text-red-400 text-xs truncate">Delete "{p.name}"?</span>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => handleDelete(p._id)}
-                          className="text-red-400 hover:text-red-300 text-xs font-semibold"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="text-gray-400 hover:text-white text-xs"
-                        >
-                          Cancel
-                        </button>
+                        <button onClick={() => handleDelete(p._id)} className="text-red-400 hover:text-red-300 text-xs font-semibold">Delete</button>
+                        <button onClick={() => setConfirmDeleteId(null)} className="text-gray-400 hover:text-white text-xs">Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -161,50 +149,20 @@ export default function ProgramBar() {
                       <button
                         onClick={() => handleSelect(p._id)}
                         className={`flex-1 text-left flex items-center gap-2.5 px-3 py-2.5 text-sm transition
-                          ${p._id === activeProgramId
-                            ? 'text-white bg-gray-800'
-                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                          }`}
+                          ${p._id === activeProgramId ? 'text-white bg-gray-800' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
                       >
-                        <span className={`w-3.5 flex-shrink-0 ${p._id === activeProgramId ? 'text-indigo-400' : 'text-transparent'}`}>
-                          ✓
-                        </span>
+                        <span className={`w-3.5 flex-shrink-0 ${p._id === activeProgramId ? 'text-indigo-400' : 'text-transparent'}`}>✓</span>
                         <span className="truncate">{p.name}</span>
                       </button>
-
-                      {/* Kebab menu */}
                       <div className="relative pr-1">
                         <button
-                          onClick={e => {
-                            e.stopPropagation()
-                            setMenuOpenId(menuOpenId === p._id ? null : p._id)
-                            setConfirmDeleteId(null)
-                          }}
+                          onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === p._id ? null : p._id); setConfirmDeleteId(null) }}
                           className="p-1.5 rounded text-gray-600 hover:text-gray-300 opacity-0 group-hover:opacity-100 transition"
-                        >
-                          ⋯
-                        </button>
+                        >⋯</button>
                         {menuOpenId === p._id && (
                           <div className="absolute right-0 top-full mt-1 z-30 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden min-w-24">
-                            <button
-                              onClick={() => {
-                                setRenamingId(p._id)
-                                setRenameValue(p.name)
-                                setMenuOpenId(null)
-                              }}
-                              className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition"
-                            >
-                              Rename
-                            </button>
-                            <button
-                              onClick={() => {
-                                setConfirmDeleteId(p._id)
-                                setMenuOpenId(null)
-                              }}
-                              className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition"
-                            >
-                              Delete
-                            </button>
+                            <button onClick={() => { setRenamingId(p._id); setRenameValue(p.name); setMenuOpenId(null) }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">Rename</button>
+                            <button onClick={() => { setConfirmDeleteId(p._id); setMenuOpenId(null) }} className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 transition">Delete</button>
                           </div>
                         )}
                       </div>
@@ -215,49 +173,25 @@ export default function ProgramBar() {
             </div>
           )}
         </div>
-
-        {/* New program button */}
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400
-                     hover:border-gray-600 hover:text-white text-sm transition"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-600 hover:text-white text-sm transition"
         >
-          <span>+</span>
-          <span>New Program</span>
+          <span>+</span><span>New Program</span>
         </button>
-
         {switching && <span className="text-gray-500 text-sm">Switching...</span>}
         {error && <span className="text-red-400 text-sm">{error}</span>}
       </div>
-
-      {/* Unsaved changes prompt — shown below the bar when switching with pending changes */}
       {pendingId && (
         <div className="mt-2 flex flex-wrap items-center gap-2 p-2.5 bg-amber-900/20 border border-amber-700/40 rounded-lg text-sm">
           <span className="text-amber-400">Unsaved changes.</span>
-          <button
-            onClick={handleSaveAndSwitch}
-            disabled={switching}
-            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition"
-          >
-            Save & Switch
-          </button>
-          <button
-            onClick={() => doSwitch(pendingId)}
-            disabled={switching}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition"
-          >
-            Discard & Switch
-          </button>
-          <button
-            onClick={() => setPendingId(null)}
-            className="px-2 py-1 text-gray-400 hover:text-white text-xs transition"
-          >
-            Cancel
-          </button>
+          <button onClick={handleSaveAndSwitch} disabled={switching} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition">Save & Switch</button>
+          <button onClick={() => doSwitch(pendingId)} disabled={switching} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition">Discard & Switch</button>
+          <button onClick={() => setPendingId(null)} className="px-2 py-1 text-gray-400 hover:text-white text-xs transition">Cancel</button>
         </div>
       )}
-
       {showModal && <NewProgramModal onClose={() => setShowModal(false)} />}
     </div>
   )
 }
+*/
