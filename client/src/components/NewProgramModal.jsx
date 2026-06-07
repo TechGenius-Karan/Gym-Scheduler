@@ -1,4 +1,3 @@
-/*
 import { useEffect, useState } from 'react'
 import { getAllTemplates, getTemplate } from '../api/templateApi'
 import { useSchedule } from '../context/ScheduleContext'
@@ -178,5 +177,3 @@ export default function NewProgramModal({ onClose }) {
     </div>
   )
 }
-
-*/

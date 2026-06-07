@@ -544,7 +544,7 @@ const hasUnsavedChanges = useMemo(() => {
 
 **New functions** — add a new `// ── program actions` section after `reorderExercises`. Five functions total:
 
-1. `saveActiveProgram()` — if `activeProgramId` exists: calls `saveProgram(activeProgramId, days)`, updates both `myScheduleData` and `savedScheduleData` with the server response, patches the program name in the `programs` list. If no `activeProgramId` (first-ever save): calls `createProgram('My Schedule', days)`, sets `activeProgramId`, sets both data states, sets `programs` list to the single created entry.
+1. `saveActiveProgram()` — `days` here refers to `myScheduleData?.days`. If `activeProgramId` exists: calls `saveProgram(activeProgramId, days)`, updates both `myScheduleData` and `savedScheduleData` with the server response, patches the program entry in the `programs` list. If no `activeProgramId` (first-ever save): calls `createProgram('My Schedule', days)`, sets `activeProgramId`, sets both data states, sets `programs` list to the single created entry.
 
 2. `switchProgram(id)` — calls `activateProgram(id)`, sets `activeProgramId`, sets both data states to the returned program, sets `activeView('mySchedule')`, updates `programs` list to reflect new `isActive` flags.
 
@@ -587,7 +587,14 @@ Three targeted changes only — the rest of the file stays identical:
 
 ### Step 5 — Uncomment `ProgramBar.jsx` and `NewProgramModal.jsx`
 
-Remove the `/* */` wrappers from both files. No logic changes needed. `ProgramBar` reads from context so it just works once the context changes in Step 3 are in place.
+Remove the `/* */` wrappers from both files. `ProgramBar` reads from context so it just works once the context changes in Step 3 are in place.
+
+**Important — `NewProgramModal.jsx` needs JSX comment fixes when uncommented.** The inner JSX comments were deliberately broken (e.g. `{/* Header }`) to prevent the inner `*/` from prematurely closing the outer block comment. After removing the outer `/* */`, restore all broken inner comments to valid syntax:
+- `{/* Header }` → `{/* Header */}`
+- `{/* Name input *}` → `{/* Name input */}`
+- `{/* Source picker *}` → `{/* Source picker */}`
+- `{/* Template list *}` → `{/* Template list */}`
+- `{/* Actions *}` → `{/* Actions */}`
 
 ---
 
