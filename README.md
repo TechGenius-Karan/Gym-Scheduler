@@ -15,6 +15,7 @@ A web app for planning your weekly gym split. Pick a training template, customis
 - **1RM Calculator** — estimate your one-rep max using the Epley formula
 - **Calorie & Protein Estimator** — calculates daily calorie and protein targets using the Mifflin-St Jeor formula, with support for different goals (cut / maintain / bulk) and cm or ft/in height input
 - **BMI Calculator** — animated semicircular gauge showing your Body Mass Index across WHO-standard zones (Underweight / Normal / Overweight / Obese), with kg/lbs and cm/ft+in input support
+- **Multiple saved programs** — save and switch between named training programs (e.g. "Bulk — PPL", "Cut Phase") via a program bar at the top of the schedule page; programs can be renamed, deleted, and created from scratch or a template
 - **Auto-save state** — edits stay in memory until you explicitly save
 
 ---
@@ -106,7 +107,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 Gym-Scheduler/
 ├── client/                  # React frontend
 │   └── src/
-│       ├── api/             # Fetch wrappers (authApi, scheduleApi, templateApi)
+│       ├── api/             # Fetch wrappers (authApi, scheduleApi, templateApi, programApi)
 │       ├── components/      # UI components
 │       ├── context/         # AuthContext, ScheduleContext
 │       ├── pages/           # LoginPage, SchedulePage, ToolsPage
@@ -116,8 +117,8 @@ Gym-Scheduler/
     ├── config/              # MongoDB connection
     ├── data/templates/      # Static JSON split templates
     ├── middleware/          # JWT auth middleware
-    ├── models/              # Mongoose models (User, Schedule, Exercise)
-    └── routes/              # auth, schedule, templates
+    ├── models/              # Mongoose models (User, Schedule, Exercise, Program)
+    └── routes/              # auth, schedule, templates, programs
 ```
 
 ---
@@ -162,6 +163,5 @@ Drop a `.json` file into `server/data/templates/`. It gets picked up automatical
 
 ## Roadmap
 
-- [ ] AI assistant — chat with Claude to adjust your schedule when you miss a session
-- [ ] Progress tracking — log weights over time
+- [ ] AI coach — a side panel powered by Google Gemini that suggests a revised weekly schedule when you miss a session, with before/after preview and one-click apply
 - [ ] Mobile app

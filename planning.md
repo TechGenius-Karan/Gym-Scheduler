@@ -520,94 +520,65 @@ A slide-in side panel on the schedule page powered by **Google Gemini 2.0 Flash*
 
 ---
 
-## v1.5 — Enhancements & New Features (Backlog)
+## v1.5 — Implemented Enhancements
 
-These are ideas to tackle after the core v1 is complete. Ordered roughly by complexity (simplest first). AI features are saved for v2.
+All features below have been built and shipped on top of the core v1.
 
 ---
 
 ### UI / UX Improvements
 
 #### 1. Toast Notifications
-Currently save success/failure is shown inline. Replace with a brief, auto-dismissing toast that slides in from the bottom corner. Applies to: schedule saved, exercise added, schedule cleared. Keeps the UI clean while still giving clear feedback.
+Save success/failure shows as a brief, auto-dismissing toast that slides in from the bottom corner. Applies to: schedule saved, exercise added, schedule cleared.
 
 #### 2. Loading Skeletons
-Replace any spinner or blank-while-loading states with skeleton placeholder cards that mirror the shape of the real content. Makes the app feel faster and more polished, especially on first load.
+Skeleton placeholder cards mirror the shape of the real content while schedule/template data is fetching. Makes the app feel faster and more polished, especially on first load.
 
 #### 3. Today Highlight on Day Card
-The app already detects today's weekday. Add a stronger visual treatment to the current day's card — a colored top border or accent ring — so it jumps out immediately in the weekly grid.
+The current day's card has a stronger visual treatment — a coloured top border or accent ring — so it jumps out immediately in the weekly grid.
 
 #### 4. Rest Day Visual Badge
-When a day is toggled to Rest, show a distinct "Rest Day" badge or muted card style instead of just empty space. Makes it clear the rest is intentional, not an unfilled day.
+When a day is toggled to Rest, a distinct "Rest Day" badge and muted card style is shown instead of empty space. Makes it clear the rest is intentional, not an unfilled day.
 
-#### 5. Exercise Notes Field
-Add a small optional notes input per exercise (e.g. "pause reps", "superset with X", "drop set on last"). Stored as a `notes` string on the exercise object. Hidden by default; revealed by a small icon button to keep the UI uncluttered.
+#### 5. Drag-to-Reorder Exercises
+Users can drag exercises up and down within a day card to reorder them. Uses `@dnd-kit/core` (lightweight, accessible). Order is preserved in the schedule array and saved with the rest of the schedule.
 
-#### 6. Collapsible Day Cards (Mobile)
-On small screens, collapse all day cards except today's by default. A tap expands them. Reduces scrolling on mobile significantly.
+#### 6. Split Name / Program Notes
+Users can give their current program a name (e.g. "PPL — Bulk Phase Q3") and a short description. Displayed at the top of the schedule page. Stored as `programName` and `programNotes` on the schedule document.
 
-#### 7. Drag-to-Reorder Exercises
-Let users drag exercises up and down within a day card to reorder them. Use `@dnd-kit/core` (lightweight, accessible). The order is preserved in the schedule array and saved with the rest of the schedule.
-
-#### 8. Split Name / Program Notes
-Let users give their current program a name (e.g. "PPL — Bulk Phase Q3") and a short description. Displayed at the top of the schedule page as a header. Stored as `programName` and `programNotes` on the schedule document.
-
-#### 9. Weekly Volume Summary
-Below the 7-day grid, show a small summary row: total sets per week, number of training days, and rest days. Helps users quickly sanity-check their volume without counting manually.
-
-#### 10. Empty State Illustration
-When a brand-new user lands on the schedule page before picking a split, show a simple SVG illustration with a clear call-to-action ("Pick a split to get started"). Better than a blank screen.
+#### 7. Empty State Illustration
+When a brand-new user lands on the schedule page before picking a split, a simple illustration is shown with a clear call-to-action ("Pick a split to get started"). Better than a blank screen.
 
 ---
 
-### New Tools
+### Tools
 
-#### 11. Plate Calculator
-User enters a target barbell weight; the tool calculates which plates to load on each side of the bar (assuming a standard 20 kg Olympic bar). Outputs a visual plate stack. Entirely client-side. Extremely useful at the gym when loading up quickly.
+#### 8. 1RM Calculator
+Users enter weight lifted and reps completed; the app calculates estimated one-rep max using the Epley formula: `1RM = weight × (1 + reps / 30)`. Result updates live as the user types. Lives on the Tools page.
 
-#### 12. Macro / Calorie Estimator
-User enters bodyweight, height, age, sex, and goal (bulk / maintain / cut). App computes an estimated TDEE using the Mifflin-St Jeor formula and a simple activity multiplier, then splits it into a suggested macro breakdown (protein / carbs / fat in grams). All client-side, no API needed.
+#### 9. Macro / Calorie Estimator
+User enters bodyweight, height, age, sex, and goal (bulk / maintain / cut). App computes an estimated TDEE using the Mifflin-St Jeor formula and a simple activity multiplier, then splits it into a suggested macro breakdown (protein / carbs / fat in grams). Supports cm and ft/in height input. All client-side, no API needed.
 
-#### 13. Rest Timer
-A simple countdown timer with preset durations (60s, 90s, 2m, 3m) and a custom input. Plays a short audio tone when it hits zero. Lives as a small floating widget or a dedicated card on the Tools page. Extremely useful mid-workout.
-
-#### 14. Wilks / DOTS Score Calculator
-Takes bodyweight and total lifted weight (or individual lifts), outputs a Wilks or DOTS score — a bodyweight-normalized strength metric used in powerlifting. Useful for intermediate/advanced lifters who want to compare strength across weight classes.
-
-#### 15. Bodyweight Tracker
-A simple log where users record their bodyweight over time with a date. Displays a minimal line chart (using a lightweight library like `recharts`). Stored in a new `bodyweightLogs` collection on the backend. Gives users a second reason to open the app regularly.
+#### 10. BMI Calculator
+User enters weight and height; app calculates Body Mass Index and displays it on an animated semicircular gauge across WHO-standard zones (Underweight / Normal / Overweight / Obese). Supports kg/lbs and cm/ft+in input. All client-side, no API needed.
 
 ---
 
 ### Feature Ideas
 
-#### 16. Workout Completion Tracking
-A "Mark as done" checkbox on each day card that resets every Monday. Ticked days get a visual strikethrough or checkmark. Store completion state in localStorage first (no backend changes needed); can be synced to the server in a later pass. Gives users a satisfying sense of progress through the week.
+#### 11. Multiple Saved Programs
+Users can save more than one named program (e.g. "Bulk — PPL", "Cut Phase", "Strength Block") and switch between them freely. A **Program Bar** sits at the top of the schedule page showing the active program name with a dropdown to switch between saved programs and a "+ New Program" button. Creating a new program follows the same flow as the current new-user experience: pick a template, duplicate an existing program, or start fresh — then give it a name. Switching programs loads that program's schedule into the page. If there are unsaved changes when switching, the user is prompted to save or discard first.
 
-#### 17. Multiple Saved Programs
-Allow users to save more than one named program (e.g. "Bulk — PPL", "Cut Phase", "Strength Block") and switch between them freely. A user's training changes across phases — they shouldn't have to rebuild their schedule from scratch every time they switch goals.
+Programs can be renamed and deleted via a small options menu. Deleting the active program auto-activates the next available one; if it was the last program, the SplitPicker opens again. Under the hood, the `schedules` collection becomes a `programs` collection with many documents per user, each carrying a `name`, `isActive` flag, and the same `days` array. Users who had an existing single schedule are migrated transparently — their data is wrapped into a program called "My Schedule" on first request.
 
-A **Program Bar** sits at the top of the schedule page showing the active program name with a dropdown to switch between saved programs and a "+ New Program" button. Creating a new program follows the same flow as the current new-user experience: pick a template, duplicate an existing program, or start fresh — then give it a name. Switching programs loads that program's schedule into the page. If there are unsaved changes when switching, the user is prompted to save or discard first.
-
-Programs can be renamed and deleted via a small options menu. Deleting the active program auto-activates the next available one; if it was the last program, the SplitPicker opens again. The 7-day grid, inline editing, and Save button all behave exactly as they do today — they just operate on whichever program is currently active. Under the hood, the `schedules` collection becomes a `programs` collection with many documents per user, each carrying a `name`, `isActive` flag, and the same `days` array as today.
-
-#### 18. RPE Field per Exercise
-Add an optional RPE (Rate of Perceived Exertion, 1–10) field alongside sets and reps. Useful for auto-regulation training. Hidden by default like the notes field — shown only if the user wants it.
-
-#### 19. Export Schedule
-A button that generates a clean printable or shareable view of the weekly schedule — either a PDF (via `window.print()` + print stylesheet) or a shareable image (via `html-to-image`). No backend changes needed.
-
-#### 20. Keyboard Shortcuts
-Power-user shortcuts for the schedule page: `E` to focus the first editable field on today's card, `S` to save, `Escape` to cancel an edit. Documented in a small tooltip or help modal.
-
-#### 21. Motivational / Humorous Day Phrases
+#### 12. Motivational / Humorous Day Phrases
 Each day card shows a small personality-driven subtitle line beneath the split name — something relatable and gym-culture-aware. Examples:
 - Push day: "Chest day is the best day."
 - Pull day: "Back is the new chest."
 - Legs day: "Legs day 😩 let's get it."
 - Arms day: "Time to fill those sleeves."
 - Rest day: "Rest up, [name]. Recovery is gains."
-The phrase is determined by the split name (fuzzy match on keywords like "push", "legs", "pull", etc.). Falls back to a generic motivational line if no keyword matches. Phrases should feel genuine and relatable, not generic fitness-app filler. Rest day phrase uses the user's first name for a personal touch.
+The phrase is determined by the split name (fuzzy match on keywords like "push", "legs", "pull", etc.). Falls back to a generic motivational line if no keyword matches. Rest day phrase uses the user's first name for a personal touch.
 
 ---
 
