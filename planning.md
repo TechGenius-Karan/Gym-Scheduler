@@ -393,15 +393,130 @@ Gym-schedule-app/
 
 ---
 
-## v2 Features (Do Not Build Yet)
+## v2 — AI Weekly Schedule Assistant
 
-- **AI Chat Assistant** (requires Anthropic API key + billing setup)
-  - Floating chat bubble in the corner of the schedule page
-  - User describes what happened: "I missed Push day" or "I only did half my leg workout"
-  - AI (Claude API) reads the current schedule and suggests:
-    - Which exercises to redistribute to upcoming days
-    - A revised full weekly plan with before/after view
-  - Powered by `@anthropic-ai/sdk` calling `claude-sonnet-4-6` or newer
+A slide-in side panel on the schedule page powered by **Google Gemini 2.0 Flash** (free tier — no billing required). The AI reads the user's saved schedule automatically on panel open, offers a proactive opening prompt, and helps the user revise their week when sessions are missed or adjusted. The user sees a before/after preview of any suggested changes and approves before anything is applied. The revised schedule is a temporary overlay that expires automatically — the original is always preserved.
+
+### Key Behaviours
+- **Reactive + proactive mix** — AI opens with a contextual prompt based on the current schedule and day of week; user drives the conversation from there
+- **Schedule-aware** — the user's full saved schedule is silently injected into the system prompt on every request; no manual copy-paste needed
+- **Structured output** — AI always returns a revised schedule as JSON + a short plain-English explanation of why the revision still supports the user's goals
+- **Approve before apply** — the revised schedule is shown as a diff preview (before/after by day); user clicks "Apply" or "Dismiss"
+- **Temporary override** — the applied revision is stored in `localStorage` with an `expiryDate`; when that date passes the original schedule is automatically restored. The expiry is determined by the AI based on context (e.g. "rest of this week" = this Sunday, "next 3 days" = 3 days from today). The original `myScheduleData` is never overwritten — Save always saves the real schedule
+- **Stateless conversations** — no chat history stored in DB; history is held in React state for the session and sent to the API on each message (up to a max of 10 exchanges, then the panel resets with a notice)
+- **No general Q&A** — the AI is scoped strictly to schedule revision and weekly planning; off-topic requests get a polite redirect
+
+### AI Model
+- **Google Gemini 2.0 Flash** via `@google/generative-ai` npm package
+- API key stored in `server/.env` as `GEMINI_API_KEY` (obtainable free from Google AI Studio)
+- All AI requests go through the backend (`POST /api/ai/suggest`) — the API key is never exposed to the client
+
+> **Prompt Engineering Note (refine before launch):** The quality of the AI's output depends heavily on the system prompt. Before shipping, invest time in: (1) few-shot examples showing ideal revised schedules with explanations, (2) strict output schema enforcement (JSON mode or explicit format instructions), (3) constraint instructions ("never remove rest days below 1 per week", "keep total weekly sets within 10% of original"), (4) tone guidelines (concise, coach-like, no generic filler). This is a dedicated tuning pass, not an afterthought.
+
+---
+
+## Implementation Plan — V2 AI Weekly Schedule Assistant
+
+---
+
+### Phase 1 — Backend AI Endpoint
+
+**New files:** `server/routes/ai.js`
+**Modified:** `server/index.js`, `server/.env`, `server/package.json`
+
+1. Install `@google/generative-ai` on the server
+2. Add `GEMINI_API_KEY` to `server/.env` (and `.env.example`)
+3. Build `POST /api/ai/suggest` — protected by `authMiddleware`:
+   - Body: `{ userMessage: string, history: [{ role, text }] }`
+   - Server fetches the user's current schedule from DB using `req.user.id` — schedule is never sent from the client
+   - Constructs a system prompt containing: the user's name, today's date/weekday, the full schedule as formatted JSON, and strict instructions on output format
+   - Appends conversation history + new message and calls Gemini
+   - Response schema: `{ revisedSchedule: { days: [...] } | null, explanation: string, expiryDate: string | null }`
+   - `revisedSchedule` is `null` when the AI is still asking clarifying questions (not ready to suggest yet)
+   - `expiryDate` is an ISO date string the AI determines from context (e.g. end of current week, or N days out)
+4. Mount route: `app.use('/api/ai', require('./routes/ai'))` in `index.js`
+
+**Commits:** `install Gemini SDK` → `add POST /api/ai/suggest endpoint` → `mount AI route`
+
+---
+
+### Phase 2 — Frontend Panel Shell
+
+**New files:** `client/src/components/AiPanel.jsx`, `client/src/api/aiApi.js`
+**Modified:** `client/src/pages/SchedulePage.jsx`
+
+1. `aiApi.js` — `sendMessage(userMessage, history)` fetch wrapper to `POST /api/ai/suggest`
+2. `AiPanel.jsx` — slide-in panel from the right edge of the schedule page:
+   - Fixed toggle button on the right side of the page ("AI Coach" label + icon)
+   - Panel slides in with CSS transition (does not push content — overlays)
+   - Inner layout: header bar ("AI Coach" + close button), message list, text input + send button
+   - No AI calls yet — renders a hardcoded welcome message as a placeholder
+3. Add panel toggle state to `SchedulePage.jsx`; render `<AiPanel />` at the bottom of the page tree
+
+**Commits:** `add AI panel component shell` → `wire panel toggle on schedule page`
+
+---
+
+### Phase 3 — Conversation + Suggestion Display
+
+**New files:** `client/src/components/ScheduleDiffPreview.jsx`
+**Modified:** `AiPanel.jsx`
+
+1. Connect the send button → `aiApi.sendMessage()` → append response to message list
+2. On panel open, fire a silent "opener" call (no user message shown) — the AI reads the schedule and returns a short proactive greeting. Show this as the first message in the panel
+3. While waiting for any response: show a typing indicator (three animated dots)
+4. When the API response includes a non-null `revisedSchedule`, render `ScheduleDiffPreview.jsx` inline in the chat — a compact 7-row table showing each day's original vs suggested split name, with changed days highlighted
+5. The `explanation` string renders as a plain paragraph below the diff
+6. Conversation history (up to 10 exchanges) is held in component state and sent on every call; at 10 exchanges show a "Session limit reached — start a new conversation" notice and disable input
+
+**Commits:** `connect chat input to AI endpoint` → `add proactive opening message on panel open` → `add schedule diff preview component` → `wire diff into chat response`
+
+---
+
+### Phase 4 — Approve / Reject + Temporary Override
+
+**Modified:** `client/src/context/ScheduleContext.jsx`, `AiPanel.jsx`, `WeeklyView.jsx`, `DayCard.jsx`, `SchedulePage.jsx`
+
+1. Add override state to `ScheduleContext`:
+   ```js
+   const [weeklyOverride, setWeeklyOverride] = useState(null)
+   // shape: { days: [...], expiryDate: "2026-06-15", originalDays: [...] }
+   ```
+2. On app load (inside the schedule fetch `useEffect`): read `weeklyOverride` from `localStorage`; if `expiryDate` is in the past, clear it; otherwise restore it into state
+3. The schedule page renders `weeklyOverride?.days ?? myScheduleData?.days` — everything downstream (`WeeklyView`, `WelcomeBanner` today notification) automatically reflects the override
+4. Save button always writes `myScheduleData` — the override is never saved to the server
+5. `ScheduleDiffPreview` gets two buttons: **"Apply"** and **"Dismiss"**
+   - Apply → calls `setWeeklyOverride({ days: revisedSchedule.days, expiryDate, originalDays: myScheduleData.days })`, persists to `localStorage`, closes the diff card with a confirmation message
+   - Dismiss → removes the diff card from chat, conversation continues
+6. When an override is active, `WeeklyView` shows a banner: **"AI-suggested schedule active until [date] — Revert to original"**; clicking "Revert" calls `setWeeklyOverride(null)` and clears `localStorage`
+7. Days that differ from the original get a subtle left border accent on their `DayCard` so the user can see what changed at a glance
+
+**Commits:** `add weeklyOverride state to ScheduleContext` → `load and expire override from localStorage on app start` → `wire approve and dismiss buttons in AI panel` → `add active override banner to WeeklyView` → `add changed-day accent to DayCard`
+
+---
+
+### Phase 5 — Polish & Edge Cases
+
+1. Loading skeleton inside panel while opener call is in flight
+2. Error state if API call fails — inline error message with a retry button
+3. Send button disabled while a request is in flight (prevent double-sends)
+4. Panel closes on `Escape` key
+5. Mobile: panel takes full width (`w-full`) on screens below `md` breakpoint
+6. Empty state: if user has no saved schedule, panel shows "Save your schedule first so I can help you revise it" with a link to the schedule page
+7. If `GEMINI_API_KEY` is missing from env, the `/api/ai/suggest` route returns a clear 503 with message "AI features not configured" — the panel shows this gracefully instead of crashing
+
+**Commits:** `AI panel loading skeleton and error state` → `AI panel keyboard and mobile handling` → `AI panel empty and unconfigured states`
+
+---
+
+### What Does NOT Change
+
+- `WeeklyView`, `DayCard`, `ExerciseRow` — read `days` from context as before; the override is transparent to them
+- Save button — always saves `myScheduleData`, override is ignored
+- `SplitPicker`, `TemplateView`, `ScheduleActionBar` — untouched
+- `Navbar` — untouched
+- `WelcomeBanner` — reads `myScheduleData.days` for today's notification (shows original, not override)
+- All existing DB collections — no schema changes needed for v2
 
 ---
 
