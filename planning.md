@@ -517,7 +517,7 @@ A slide-in side panel on the schedule page powered by **Google Gemini 2.0 Flash*
 | Phase 2 | Frontend panel shell (`AiPanel.jsx`, `aiApi.js`, toggle on `SchedulePage`) | ✅ Done |
 | Phase 3 | Conversation + diff display (`ScheduleDiffPreview.jsx`, opener call, typing indicator) | ✅ Done |
 | Phase 4 | Approve/reject + temporary override (`weeklyOverride` state, localStorage, banner, day accent) | ✅ Done |
-| Phase 5 | Polish (loading skeleton, error/retry, Escape key, mobile, edge cases) | ⬜ Not started |
+| Phase 5 | Polish (loading skeleton, error/retry, Escape key, mobile, edge cases) | ✅ Done |
 
 **Notes:**
 - Using Gemini 2.0 Flash (free tier). API key stored in `server/.env` as `GEMINI_API_KEY`.

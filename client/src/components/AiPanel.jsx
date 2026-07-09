@@ -57,7 +57,7 @@ function UserBubble({ text }) {
   )
 }
 
-function AiBubble({ msg, onApply, onDismiss, isDismissed, isApplied }) {
+function AiBubble({ msg, onApply, onDismiss, onRetry, isDismissed, isApplied }) {
   return (
     <div className="flex gap-2.5">
       <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center mt-0.5">
@@ -83,6 +83,16 @@ function AiBubble({ msg, onApply, onDismiss, isDismissed, isApplied }) {
           ${msg.isError ? 'bg-red-950 border border-red-800 text-red-300' : 'bg-gray-800 text-gray-200'}`}>
           {msg.text}
         </div>
+        {/* Retry button for error messages */}
+        {msg.isError && onRetry && (
+          <button
+            onClick={onRetry}
+            className="self-start text-xs text-red-400 hover:text-red-300 underline
+                       underline-offset-2 transition pl-1"
+          >
+            Try again
+          </button>
+        )}
       </div>
     </div>
   )
@@ -96,12 +106,26 @@ function SessionEndNotice() {
   )
 }
 
+function EmptyState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3 pb-8">
+      <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
+        <SparkleIcon className="w-6 h-6 text-gray-600" />
+      </div>
+      <p className="text-sm text-gray-300 font-medium">No saved schedule yet</p>
+      <p className="text-xs text-gray-600 leading-relaxed">
+        Save your schedule first and I'll help you optimise and adjust your week.
+      </p>
+    </div>
+  )
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 const MAX_EXCHANGES = 10
 
 export default function AiPanel({ isOpen, onOpen, onClose }) {
-  const { applyOverride } = useSchedule()
+  const { applyOverride, myScheduleData } = useSchedule()
 
   const [messages, setMessages] = useState([])
   const [history, setHistory] = useState([])   // raw pairs sent to Gemini
@@ -115,10 +139,11 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
   const messagesEndRef = useRef(null)
 
   const exchangeCount = messages.filter(m => m.role === 'user').length
+  const hasSchedule = !!myScheduleData
 
-  // Fire opener when panel first opens
+  // Fire opener when panel first opens (only if a schedule exists)
   useEffect(() => {
-    if (isOpen && messages.length === 0) fireOpener()
+    if (isOpen && hasSchedule && messages.length === 0 && !loading) fireOpener()
   }, [isOpen])
 
   // Auto-scroll to latest message
@@ -159,26 +184,31 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
         expiryDate: null,
       }])
     } catch (err) {
+      const id = crypto.randomUUID()
       setMessages([{
-        id: crypto.randomUUID(),
+        id,
         role: 'ai',
         text: err.message || 'Failed to connect to AI Coach. Please try again.',
         isError: true,
+        retryPayload: { type: 'opener' },
       }])
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleSend() {
-    const text = inputValue.trim()
+  async function handleSend(overrideText, overrideHistory) {
+    const text = overrideText ?? inputValue.trim()
+    const baseHistory = overrideHistory ?? history
     if (!text || loading || sessionEnded) return
 
-    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }])
-    setInputValue('')
+    if (!overrideText) {
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }])
+      setInputValue('')
+    }
     setLoading(true)
 
-    const updatedHistory = [...history, { role: 'user', text }]
+    const updatedHistory = [...baseHistory, { role: 'user', text }]
 
     try {
       const data = await sendMessage(text, updatedHistory)
@@ -193,14 +223,27 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
       setHistory([...updatedHistory, { role: 'model', text: data.explanation }])
       if (exchangeCount + 1 >= MAX_EXCHANGES) setSessionEnded(true)
     } catch (err) {
+      const id = crypto.randomUUID()
       setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
+        id,
         role: 'ai',
         text: err.message || 'Something went wrong. Please try again.',
         isError: true,
+        retryPayload: { type: 'message', text, historyAtSend: baseHistory },
       }])
     } finally {
       setLoading(false)
+    }
+  }
+
+  function handleRetry(errorMsgId, retryPayload) {
+    setMessages(prev => prev.filter(m => m.id !== errorMsgId))
+    if (retryPayload.type === 'opener') {
+      setMessages([])
+      setHistory([])
+      fireOpener()
+    } else {
+      handleSend(retryPayload.text, retryPayload.historyAtSend)
     }
   }
 
@@ -217,7 +260,7 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
     e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px'
   }
 
-  const canSend = inputValue.trim().length > 0 && !loading && !sessionEnded
+  const canSend = inputValue.trim().length > 0 && !loading && !sessionEnded && hasSchedule
 
   return (
     <>
@@ -263,31 +306,37 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
           </button>
         </div>
 
-        {/* Message list */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-          {messages.map(msg =>
-            msg.role === 'user'
-              ? <UserBubble key={msg.id} text={msg.text} />
-              : (
-                <AiBubble
-                  key={msg.id}
-                  msg={msg}
-                  isDismissed={dismissedDiffs.has(msg.id)}
-                  isApplied={appliedDiffs.has(msg.id)}
-                  onApply={() => {
-                    applyOverride(msg.revisedSchedule.days, msg.expiryDate)
-                    setAppliedDiffs(prev => new Set(prev).add(msg.id))
-                  }}
-                  onDismiss={() => {
-                    setDismissedDiffs(prev => new Set(prev).add(msg.id))
-                  }}
-                />
-              )
-          )}
-          {loading && <TypingIndicator />}
-          {sessionEnded && <SessionEndNotice />}
-          <div ref={messagesEndRef} />
-        </div>
+        {/* Body */}
+        {!hasSchedule ? (
+          <EmptyState />
+        ) : (
+          <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+            {messages.map(msg =>
+              msg.role === 'user'
+                ? <UserBubble key={msg.id} text={msg.text} />
+                : (
+                  <AiBubble
+                    key={msg.id}
+                    msg={msg}
+                    isDismissed={dismissedDiffs.has(msg.id)}
+                    isApplied={appliedDiffs.has(msg.id)}
+                    onApply={() => {
+                      applyOverride(msg.revisedSchedule.days, msg.expiryDate)
+                      setAppliedDiffs(prev => new Set(prev).add(msg.id))
+                    }}
+                    onDismiss={() => setDismissedDiffs(prev => new Set(prev).add(msg.id))}
+                    onRetry={msg.isError && msg.retryPayload
+                      ? () => handleRetry(msg.id, msg.retryPayload)
+                      : null
+                    }
+                  />
+                )
+            )}
+            {loading && <TypingIndicator />}
+            {sessionEnded && <SessionEndNotice />}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
 
         {/* Input bar */}
         <div className="shrink-0 border-t border-gray-800 p-4">
@@ -298,15 +347,19 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
               onChange={handleInput}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder={sessionEnded ? 'Session ended' : 'Ask your coach...'}
-              disabled={sessionEnded}
+              placeholder={
+                !hasSchedule ? 'Save your schedule first...'
+                : sessionEnded ? 'Session ended'
+                : 'Ask your coach...'
+              }
+              disabled={!hasSchedule || sessionEnded}
               className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500
                          rounded-xl px-3 py-2.5 text-sm resize-none leading-relaxed
                          focus:outline-none focus:border-blue-600 transition overflow-hidden
                          disabled:opacity-40 disabled:cursor-not-allowed"
             />
             <button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={!canSend}
               className="shrink-0 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white
                          transition disabled:opacity-30 disabled:cursor-not-allowed"
