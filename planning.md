@@ -509,6 +509,24 @@ A slide-in side panel on the schedule page powered by **Google Gemini 2.0 Flash*
 
 ---
 
+### Build Status
+
+| Phase | Description | Status |
+|---|---|---|
+| Phase 1 | Backend AI endpoint (`POST /api/ai/suggest`, Gemini 2.0 Flash, system prompt) | ✅ Done |
+| Phase 2 | Frontend panel shell (`AiPanel.jsx`, `aiApi.js`, toggle on `SchedulePage`) | ✅ Done |
+| Phase 3 | Conversation + diff display (`ScheduleDiffPreview.jsx`, opener call, typing indicator) | ⬜ Not started |
+| Phase 4 | Approve/reject + temporary override (`weeklyOverride` state, localStorage, banner, day accent) | ⬜ Not started |
+| Phase 5 | Polish (loading skeleton, error/retry, Escape key, mobile, edge cases) | ⬜ Not started |
+
+**Notes:**
+- Using Gemini 2.0 Flash (free tier). API key stored in `server/.env` as `GEMINI_API_KEY`.
+- Backend uses `responseMimeType: 'application/json'` to force valid JSON output from Gemini.
+- Opener call triggered by sending `__opener__` as the message (no user message shown in UI).
+- AI fetches active program from DB server-side via `Program.findOne({ userId, isActive: true })`.
+
+---
+
 ### What Does NOT Change
 
 - `WeeklyView`, `DayCard`, `ExerciseRow` — read `days` from context as before; the override is transparent to them

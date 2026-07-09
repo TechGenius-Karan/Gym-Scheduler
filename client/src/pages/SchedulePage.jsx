@@ -8,6 +8,7 @@ import WeeklyView from '../components/WeeklyView'
 import ScheduleActionBar from '../components/ScheduleActionBar'
 import EmptyScheduleState from '../components/EmptyScheduleState'
 import ProgramBar from '../components/ProgramBar'
+import AiPanel from '../components/AiPanel'
 
 function ScheduleSkeleton() {
   return (
@@ -49,6 +50,7 @@ export default function SchedulePage() {
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [showSplitPicker, setShowSplitPicker] = useState(false)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
 
   useEffect(() => {
     Promise.all([getActiveProgram(), getPrograms()])
@@ -101,6 +103,12 @@ export default function SchedulePage() {
           <ScheduleActionBar onSave={handleSave} saving={saving} saveError={saveError} />
         </>
       )}
+
+      <AiPanel
+        isOpen={aiPanelOpen}
+        onOpen={() => setAiPanelOpen(true)}
+        onClose={() => setAiPanelOpen(false)}
+      />
 
       {/* Fixed toast — doesn't shift layout */}
       {saveSuccess && (
