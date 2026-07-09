@@ -1,7 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { sendMessage } from '../api/aiApi'
+import ScheduleDiffPreview from './ScheduleDiffPreview'
 
-const sparkleIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none"
+// ── Icons ──────────────────────────────────────────────────────────────────
+
+const SparkleIcon = ({ className = 'w-5 h-5' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
     <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z" />
@@ -12,8 +16,7 @@ const sparkleIcon = (
 const closeIcon = (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 )
 
@@ -25,26 +28,189 @@ const sendIcon = (
   </svg>
 )
 
-export default function AiPanel({ isOpen, onOpen, onClose }) {
-  const inputRef = useRef(null)
+// ── Sub-components ─────────────────────────────────────────────────────────
 
-  // Focus input when panel opens
+function TypingIndicator() {
+  return (
+    <div className="flex gap-2.5">
+      <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center">
+        <SparkleIcon className="w-3.5 h-3.5 text-white" />
+      </div>
+      <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+      </div>
+    </div>
+  )
+}
+
+function UserBubble({ text }) {
+  return (
+    <div className="flex justify-end">
+      <div className="bg-blue-600 rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white
+                      leading-relaxed max-w-[85%] break-words">
+        {text}
+      </div>
+    </div>
+  )
+}
+
+function AiBubble({ msg }) {
+  return (
+    <div className="flex gap-2.5">
+      <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center mt-0.5">
+        <SparkleIcon className="w-3.5 h-3.5 text-white" />
+      </div>
+      <div className="flex flex-col gap-2 max-w-[90%]">
+        {/* Diff preview shown above explanation when a revision exists */}
+        {msg.revisedSchedule && (
+          <ScheduleDiffPreview revisedSchedule={msg.revisedSchedule} />
+        )}
+        <div className={`rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed
+          ${msg.isError ? 'bg-red-950 border border-red-800 text-red-300' : 'bg-gray-800 text-gray-200'}`}>
+          {msg.text}
+        </div>
+        {msg.expiryDate && (
+          <p className="text-[10px] text-gray-600 pl-1">
+            Suggested override expires {msg.expiryDate}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SessionEndNotice() {
+  return (
+    <div className="text-center text-xs text-gray-500 border border-gray-700 rounded-xl px-4 py-3 bg-gray-900 mt-2">
+      Session limit reached — start a new conversation to continue.
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
+const MAX_EXCHANGES = 10
+
+export default function AiPanel({ isOpen, onOpen, onClose }) {
+  const [messages, setMessages] = useState([])
+  const [history, setHistory] = useState([])   // raw pairs sent to Gemini
+  const [inputValue, setInputValue] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sessionEnded, setSessionEnded] = useState(false)
+
+  const textareaRef = useRef(null)
+  const messagesEndRef = useRef(null)
+
+  const exchangeCount = messages.filter(m => m.role === 'user').length
+
+  // Fire opener when panel first opens
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 300)
+    if (isOpen && messages.length === 0) fireOpener()
   }, [isOpen])
 
-  // Close on Escape key
+  // Auto-scroll to latest message
   useEffect(() => {
-    function handleKey(e) {
-      if (e.key === 'Escape' && isOpen) onClose()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  // Focus textarea when panel opens
+  useEffect(() => {
+    if (isOpen) setTimeout(() => textareaRef.current?.focus(), 310)
+  }, [isOpen])
+
+  // Escape key
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape' && isOpen) onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
+
+  // Reset textarea height when input is cleared
+  useEffect(() => {
+    if (!inputValue && textareaRef.current) textareaRef.current.style.height = 'auto'
+  }, [inputValue])
+
+  async function fireOpener() {
+    setLoading(true)
+    try {
+      const data = await sendMessage(null, [])
+      setHistory([
+        { role: 'user', text: '__opener__' },
+        { role: 'model', text: data.explanation },
+      ])
+      setMessages([{
+        id: crypto.randomUUID(),
+        role: 'ai',
+        text: data.explanation,
+        revisedSchedule: null,
+        expiryDate: null,
+      }])
+    } catch (err) {
+      setMessages([{
+        id: crypto.randomUUID(),
+        role: 'ai',
+        text: err.message || 'Failed to connect to AI Coach. Please try again.',
+        isError: true,
+      }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSend() {
+    const text = inputValue.trim()
+    if (!text || loading || sessionEnded) return
+
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text }])
+    setInputValue('')
+    setLoading(true)
+
+    const updatedHistory = [...history, { role: 'user', text }]
+
+    try {
+      const data = await sendMessage(text, updatedHistory)
+      const aiMsg = {
+        id: crypto.randomUUID(),
+        role: 'ai',
+        text: data.explanation,
+        revisedSchedule: data.revisedSchedule ?? null,
+        expiryDate: data.expiryDate ?? null,
+      }
+      setMessages(prev => [...prev, aiMsg])
+      setHistory([...updatedHistory, { role: 'model', text: data.explanation }])
+      if (exchangeCount + 1 >= MAX_EXCHANGES) setSessionEnded(true)
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'ai',
+        text: err.message || 'Something went wrong. Please try again.',
+        isError: true,
+      }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  function handleInput(e) {
+    setInputValue(e.target.value)
+    e.target.style.height = 'auto'
+    e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px'
+  }
+
+  const canSend = inputValue.trim().length > 0 && !loading && !sessionEnded
 
   return (
     <>
-      {/* Toggle button — visible when panel is closed */}
+      {/* Toggle button */}
       {!isOpen && (
         <button
           onClick={onOpen}
@@ -52,17 +218,14 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
                      bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium shadow-lg
                      shadow-blue-900/40 transition-all duration-200 hover:scale-105"
         >
-          {sparkleIcon}
+          <SparkleIcon className="w-4 h-4" />
           AI Coach
         </button>
       )}
 
       {/* Backdrop */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
       )}
 
       {/* Slide-in panel */}
@@ -71,10 +234,15 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
                        ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-800 shrink-0">
-          <div className="flex items-center gap-2 text-blue-400">
-            {sparkleIcon}
-            <span className="font-semibold text-white">AI Coach</span>
+        <div className="shrink-0 flex items-center justify-between px-4 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <SparkleIcon className="w-4 h-4 text-blue-400" />
+            <span className="font-semibold text-white text-sm">AI Coach</span>
+            {exchangeCount > 0 && (
+              <span className="text-[10px] text-gray-600 ml-1">
+                {exchangeCount}/{MAX_EXCHANGES} exchanges
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -86,54 +254,43 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
 
         {/* Message list */}
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-
-          {/* Placeholder welcome message */}
-          <div className="flex gap-2.5">
-            <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white mt-0.5">
-              {sparkleIcon}
-            </div>
-            <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-200 leading-relaxed max-w-[85%]">
-              Hey! I'm your AI Coach. Once connected, I'll read your current schedule and help you
-              adjust your week — whether you've missed a session, need to swap days, or just want
-              to shake things up.
-            </div>
-          </div>
-
+          {messages.map(msg =>
+            msg.role === 'user'
+              ? <UserBubble key={msg.id} text={msg.text} />
+              : <AiBubble key={msg.id} msg={msg} />
+          )}
+          {loading && <TypingIndicator />}
+          {sessionEnded && <SessionEndNotice />}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input bar */}
         <div className="shrink-0 border-t border-gray-800 p-4">
           <div className="flex items-end gap-2">
             <textarea
-              ref={inputRef}
+              ref={textareaRef}
+              value={inputValue}
+              onChange={handleInput}
+              onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Ask your coach..."
+              placeholder={sessionEnded ? 'Session ended' : 'Ask your coach...'}
+              disabled={sessionEnded}
               className="flex-1 bg-gray-800 border border-gray-700 text-white placeholder-gray-500
                          rounded-xl px-3 py-2.5 text-sm resize-none leading-relaxed
-                         focus:outline-none focus:border-blue-600 transition
-                         max-h-32 overflow-y-auto"
-              onInput={e => {
-                e.target.style.height = 'auto'
-                e.target.style.height = e.target.scrollHeight + 'px'
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  // Phase 3 will wire this up
-                }
-              }}
+                         focus:outline-none focus:border-blue-600 transition overflow-hidden
+                         disabled:opacity-40 disabled:cursor-not-allowed"
             />
             <button
+              onClick={handleSend}
+              disabled={!canSend}
               className="shrink-0 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white
-                         transition disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled
-              title="Coming soon"
+                         transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {sendIcon}
             </button>
           </div>
-          <p className="text-xs text-gray-600 mt-2 text-center">
-            Shift+Enter for new line · Esc to close
+          <p className="text-[10px] text-gray-600 mt-2 text-center">
+            Enter to send · Shift+Enter for new line · Esc to close
           </p>
         </div>
 
