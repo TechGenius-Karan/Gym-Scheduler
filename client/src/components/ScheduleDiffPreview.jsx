@@ -15,7 +15,7 @@ function isDayChanged(original, revised) {
   return origNames !== revNames
 }
 
-export default function ScheduleDiffPreview({ revisedSchedule }) {
+export default function ScheduleDiffPreview({ revisedSchedule, onApply, onDismiss }) {
   const { myScheduleData } = useSchedule()
   const originalDays = myScheduleData?.days ?? []
   const revisedDays = revisedSchedule?.days ?? []
@@ -62,6 +62,25 @@ export default function ScheduleDiffPreview({ revisedSchedule }) {
       <div className="px-3 py-2 border-t border-gray-700/40 bg-gray-800/40 text-gray-500 text-[10px]">
         {changedCount === 0 ? 'No changes from your current schedule.' : `${changedCount} day${changedCount !== 1 ? 's' : ''} changed`}
       </div>
+
+      {/* Apply / Dismiss */}
+      <div className="flex gap-2 px-3 py-3 border-t border-gray-700/40 bg-gray-900/60">
+        <button
+          onClick={onApply}
+          className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs
+                     font-medium transition"
+        >
+          Apply
+        </button>
+        <button
+          onClick={onDismiss}
+          className="flex-1 py-1.5 rounded-lg border border-gray-700 hover:border-gray-500
+                     text-gray-400 hover:text-gray-200 text-xs transition"
+        >
+          Dismiss
+        </button>
+      </div>
+
     </div>
   )
 }

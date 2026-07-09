@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendMessage } from '../api/aiApi'
+import { useSchedule } from '../context/ScheduleContext'
 import ScheduleDiffPreview from './ScheduleDiffPreview'
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -56,26 +57,32 @@ function UserBubble({ text }) {
   )
 }
 
-function AiBubble({ msg }) {
+function AiBubble({ msg, onApply, onDismiss, isDismissed, isApplied }) {
   return (
     <div className="flex gap-2.5">
       <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center mt-0.5">
         <SparkleIcon className="w-3.5 h-3.5 text-white" />
       </div>
       <div className="flex flex-col gap-2 max-w-[90%]">
-        {/* Diff preview shown above explanation when a revision exists */}
-        {msg.revisedSchedule && (
-          <ScheduleDiffPreview revisedSchedule={msg.revisedSchedule} />
+        {/* Diff preview — hidden if dismissed or applied */}
+        {msg.revisedSchedule && !isDismissed && !isApplied && (
+          <ScheduleDiffPreview
+            revisedSchedule={msg.revisedSchedule}
+            onApply={onApply}
+            onDismiss={onDismiss}
+          />
+        )}
+        {/* Applied confirmation */}
+        {msg.revisedSchedule && isApplied && (
+          <div className="text-[10px] text-blue-400 bg-blue-950/40 border border-blue-800/50
+                          rounded-lg px-3 py-2">
+            Schedule override applied until {msg.expiryDate}.
+          </div>
         )}
         <div className={`rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed
           ${msg.isError ? 'bg-red-950 border border-red-800 text-red-300' : 'bg-gray-800 text-gray-200'}`}>
           {msg.text}
         </div>
-        {msg.expiryDate && (
-          <p className="text-[10px] text-gray-600 pl-1">
-            Suggested override expires {msg.expiryDate}
-          </p>
-        )}
       </div>
     </div>
   )
@@ -94,11 +101,15 @@ function SessionEndNotice() {
 const MAX_EXCHANGES = 10
 
 export default function AiPanel({ isOpen, onOpen, onClose }) {
+  const { applyOverride } = useSchedule()
+
   const [messages, setMessages] = useState([])
   const [history, setHistory] = useState([])   // raw pairs sent to Gemini
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionEnded, setSessionEnded] = useState(false)
+  const [dismissedDiffs, setDismissedDiffs] = useState(new Set())
+  const [appliedDiffs, setAppliedDiffs] = useState(new Set())
 
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
@@ -257,7 +268,21 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
           {messages.map(msg =>
             msg.role === 'user'
               ? <UserBubble key={msg.id} text={msg.text} />
-              : <AiBubble key={msg.id} msg={msg} />
+              : (
+                <AiBubble
+                  key={msg.id}
+                  msg={msg}
+                  isDismissed={dismissedDiffs.has(msg.id)}
+                  isApplied={appliedDiffs.has(msg.id)}
+                  onApply={() => {
+                    applyOverride(msg.revisedSchedule.days, msg.expiryDate)
+                    setAppliedDiffs(prev => new Set(prev).add(msg.id))
+                  }}
+                  onDismiss={() => {
+                    setDismissedDiffs(prev => new Set(prev).add(msg.id))
+                  }}
+                />
+              )
           )}
           {loading && <TypingIndicator />}
           {sessionEnded && <SessionEndNotice />}

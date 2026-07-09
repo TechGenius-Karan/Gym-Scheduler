@@ -5,7 +5,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { getRestPhrase } from '../utils/dayPhrase'
 
-export default function DayCard({ day, isToday, restIndex }) {
+export default function DayCard({ day, isToday, restIndex, isChanged = false }) {
   const { updateDay, addExercise, reorderExercises } = useSchedule()
   const { user } = useAuth()
   const firstName = user?.name?.split(' ')[0] ?? null
@@ -20,14 +20,16 @@ export default function DayCard({ day, isToday, restIndex }) {
     reorderExercises(day.day, oldIndex, newIndex)
   }
 
-  const baseCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
+  const changedAccent = isChanged ? 'border-l-[3px] border-l-blue-500/60' : ''
+
+  const baseCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${changedAccent} ${
     isToday
       ? 'bg-gray-900 border-indigo-400 border-2 ring-2 ring-indigo-500/40'
       : 'bg-gray-900 border-gray-800'
   }`
 
   if (day.isRest) {
-    const restCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${
+    const restCard = `rounded-xl p-4 flex flex-col gap-3 border transition-colors ${changedAccent} ${
       isToday
         ? 'bg-gray-900/60 border-indigo-400/40 border-2 ring-2 ring-indigo-500/20'
         : 'bg-gray-900/60 border-gray-800/50'

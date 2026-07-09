@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo } from 'react'
+import { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { getTemplate } from '../api/templateApi'
 import {
   activateProgram, saveProgram, createProgram,
@@ -18,6 +18,24 @@ export function ScheduleProvider({ children }) {
   const [programs, setPrograms] = useState([])
   const [activeProgramId, setActiveProgramId] = useState(null)
   const [savedScheduleData, setSavedScheduleData] = useState(null)
+  const [weeklyOverride, setWeeklyOverride] = useState(null)
+  // shape: { days: [...], expiryDate: "YYYY-MM-DD", originalDays: [...] }
+
+  // Load override from localStorage on mount; discard if expired
+  useEffect(() => {
+    const stored = localStorage.getItem('gym_ai_override')
+    if (!stored) return
+    try {
+      const parsed = JSON.parse(stored)
+      if (parsed.expiryDate && new Date(parsed.expiryDate) >= new Date()) {
+        setWeeklyOverride(parsed)
+      } else {
+        localStorage.removeItem('gym_ai_override')
+      }
+    } catch {
+      localStorage.removeItem('gym_ai_override')
+    }
+  }, [])
 
   const hasUnsavedChanges = useMemo(() => {
     if (!myScheduleData?.days || !savedScheduleData?.days) return false
@@ -117,6 +135,31 @@ export function ScheduleProvider({ children }) {
     }))
   }
 
+  // ── override actions ──────────────────────────────────────────────
+
+  function applyOverride(days, expiryDate) {
+    // Assign IDs to any exercises that don't have them
+    const daysWithIds = days.map(d => ({
+      ...d,
+      exercises: (d.exercises ?? []).map(ex => ({
+        ...ex,
+        id: ex.id || crypto.randomUUID(),
+      })),
+    }))
+    const override = {
+      days: daysWithIds,
+      expiryDate,
+      originalDays: myScheduleData?.days ?? [],
+    }
+    setWeeklyOverride(override)
+    localStorage.setItem('gym_ai_override', JSON.stringify(override))
+  }
+
+  function clearOverride() {
+    setWeeklyOverride(null)
+    localStorage.removeItem('gym_ai_override')
+  }
+
   // ── program actions ───────────────────────────────────────────────
 
   async function saveActiveProgram() {
@@ -212,6 +255,7 @@ export function ScheduleProvider({ children }) {
       createNewProgram,
       renameProgramById,
       deleteProgramById,
+      weeklyOverride, applyOverride, clearOverride,
     }}>
       {children}
     </ScheduleContext.Provider>
