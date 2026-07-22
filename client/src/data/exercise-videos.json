@@ -1,0 +1,52 @@
+{
+  "_note": "Keys are exercise names in lowercase (must match template exercise names). Values are YouTube video IDs. Fill these in from your chosen channel(s).",
+
+  "flat bench press": "",
+  "bench press": "",
+  "incline bench press": "",
+  "decline bench press": "",
+  "incline dumbbell press": "",
+  "dumbbell bench press": "",
+  "cable fly": "",
+  "chest fly": "",
+  "dumbbell pullover": "",
+
+  "deadlift": "",
+  "rack pull": "",
+  "romanian deadlift": "",
+  "barbell row": "",
+  "seated cable row": "",
+  "pull-ups": "",
+  "lat pulldown": "",
+  "face pulls": "",
+  "rear delt fly": "",
+  "shrugs": "",
+
+  "overhead press": "",
+  "dumbbell shoulder press": "",
+  "lateral raises": "",
+  "front raises": "",
+
+  "barbell curl": "",
+  "hammer curl": "",
+  "preacher curl": "",
+  "cable curl": "",
+
+  "skull crushers": "",
+  "tricep pushdown": "",
+  "overhead tricep extension": "",
+  "tricep dips": "",
+
+  "squat": "",
+  "front squat": "",
+  "hack squat": "",
+  "bulgarian split squat": "",
+  "leg press": "",
+  "leg curl": "",
+  "leg extension": "",
+  "calf raises": "",
+  "seated calf raises": "",
+
+  "plank": "",
+  "ab wheel rollout": ""
+}

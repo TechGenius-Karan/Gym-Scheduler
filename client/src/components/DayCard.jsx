@@ -41,6 +41,12 @@ export default function DayCard({ day, isToday, restIndex, isChanged = false }) 
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-gray-500">{day.day}</span>
           {isToday && <span className="text-sm text-indigo-400 font-medium">Today</span>}
+          {isChanged && (
+            <span className="ml-auto text-[10px] font-semibold text-blue-400 bg-blue-950/60
+                             border border-blue-800/50 px-1.5 py-0.5 rounded-full tracking-wide">
+              AI
+            </span>
+          )}
         </div>
 
         {/* Rest body */}
@@ -66,11 +72,17 @@ export default function DayCard({ day, isToday, restIndex, isChanged = false }) 
   return (
     <div className={baseCard}>
 
-      {/* Header — day name + today badge + rest toggle */}
+      {/* Header — day name + today badge + AI badge + rest toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-gray-400">{day.day}</span>
           {isToday && <span className="text-sm text-indigo-400 font-medium">Today</span>}
+          {isChanged && (
+            <span className="text-[10px] font-semibold text-blue-400 bg-blue-950/60
+                             border border-blue-800/50 px-1.5 py-0.5 rounded-full tracking-wide">
+              AI
+            </span>
+          )}
         </div>
         <button
           onClick={() => updateDay(day.day, { isRest: true })}

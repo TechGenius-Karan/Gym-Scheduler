@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { sendMessage } from '../api/aiApi'
 import { useSchedule } from '../context/ScheduleContext'
 import ScheduleDiffPreview from './ScheduleDiffPreview'
+import ExerciseVideoCard from './ExerciseVideoCard'
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,38 @@ const sendIcon = (
     <polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 )
+
+const resetIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="1 4 1 10 7 10" />
+    <path d="M3.51 15a9 9 0 1 0 .49-3.36" />
+  </svg>
+)
+
+// ── localStorage helpers ────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'gym_ai_conversation'
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (data.date === new Date().toISOString().split('T')[0]) return data
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {}
+  return null
+}
+
+// ── Starter chips ───────────────────────────────────────────────────────────
+
+const STARTER_CHIPS = [
+  "I missed today's session",
+  "I'm travelling this week",
+  "I'm feeling overtrained",
+  "Suggest a deload week",
+]
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
@@ -57,7 +90,25 @@ function UserBubble({ text }) {
   )
 }
 
-function AiBubble({ msg, onApply, onDismiss, onRetry, isDismissed, isApplied }) {
+function StarterChips({ onChipClick }) {
+  return (
+    <div className="flex flex-wrap gap-2 mt-1">
+      {STARTER_CHIPS.map(chip => (
+        <button
+          key={chip}
+          onClick={() => onChipClick(chip)}
+          className="text-[11px] px-3 py-1.5 rounded-full border border-blue-800/60
+                     bg-blue-950/40 text-blue-300 hover:bg-blue-900/50 hover:border-blue-600
+                     transition-colors"
+        >
+          {chip}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function AiBubble({ msg, onApply, onDismiss, onRetry, isDismissed, isApplied, showChips, onChipClick }) {
   return (
     <div className="flex gap-2.5">
       <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center mt-0.5">
@@ -83,6 +134,12 @@ function AiBubble({ msg, onApply, onDismiss, onRetry, isDismissed, isApplied }) 
           ${msg.isError ? 'bg-red-950 border border-red-800 text-red-300' : 'bg-gray-800 text-gray-200'}`}>
           {msg.text}
         </div>
+        {/* Exercise video */}
+        {msg.exerciseVideoQuery && (
+          <ExerciseVideoCard exerciseName={msg.exerciseVideoQuery} />
+        )}
+        {/* Starter chips after opener */}
+        {showChips && <StarterChips onChipClick={onChipClick} />}
         {/* Retry button for error messages */}
         {msg.isError && onRetry && (
           <button
@@ -127,13 +184,17 @@ const MAX_EXCHANGES = 10
 export default function AiPanel({ isOpen, onOpen, onClose }) {
   const { applyOverride, myScheduleData } = useSchedule()
 
-  const [messages, setMessages] = useState([])
-  const [history, setHistory] = useState([])   // raw pairs sent to Gemini
+  // Restore session from localStorage (same calendar day only)
+  const sessionRef = useRef(loadSession())
+  const stored = sessionRef.current
+
+  const [messages, setMessages] = useState(() => stored?.messages ?? [])
+  const [history, setHistory] = useState(() => stored?.history ?? [])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sessionEnded, setSessionEnded] = useState(false)
-  const [dismissedDiffs, setDismissedDiffs] = useState(new Set())
-  const [appliedDiffs, setAppliedDiffs] = useState(new Set())
+  const [sessionEnded, setSessionEnded] = useState(() => stored?.sessionEnded ?? false)
+  const [dismissedDiffs, setDismissedDiffs] = useState(() => new Set(stored?.dismissedDiffs ?? []))
+  const [appliedDiffs, setAppliedDiffs] = useState(() => new Set(stored?.appliedDiffs ?? []))
 
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
@@ -141,7 +202,23 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
   const exchangeCount = messages.filter(m => m.role === 'user').length
   const hasSchedule = !!myScheduleData
 
-  // Fire opener when panel first opens (only if a schedule exists)
+  // Show chips after opener fires (only 1 AI message, 0 user messages)
+  const showChips = messages.length === 1 && exchangeCount === 0 && !loading && !sessionEnded
+
+  // Persist session to localStorage whenever state changes
+  useEffect(() => {
+    if (messages.length === 0) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      date: new Date().toISOString().split('T')[0],
+      messages,
+      history,
+      sessionEnded,
+      dismissedDiffs: [...dismissedDiffs],
+      appliedDiffs: [...appliedDiffs],
+    }))
+  }, [messages, history, sessionEnded, dismissedDiffs, appliedDiffs])
+
+  // Fire opener when panel first opens (only if no existing session)
   useEffect(() => {
     if (isOpen && hasSchedule && messages.length === 0 && !loading) fireOpener()
   }, [isOpen])
@@ -182,6 +259,7 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
         text: data.explanation,
         revisedSchedule: null,
         expiryDate: null,
+        exerciseVideoQuery: null,
       }])
     } catch (err) {
       const id = crypto.randomUUID()
@@ -195,6 +273,16 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleReset() {
+    setMessages([])
+    setHistory([])
+    setSessionEnded(false)
+    setDismissedDiffs(new Set())
+    setAppliedDiffs(new Set())
+    localStorage.removeItem(STORAGE_KEY)
+    fireOpener()
   }
 
   async function handleSend(overrideText, overrideHistory) {
@@ -218,6 +306,7 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
         text: data.explanation,
         revisedSchedule: data.revisedSchedule ?? null,
         expiryDate: data.expiryDate ?? null,
+        exerciseVideoQuery: data.exerciseVideoQuery ?? null,
       }
       setMessages(prev => [...prev, aiMsg])
       setHistory([...updatedHistory, { role: 'model', text: data.explanation }])
@@ -298,12 +387,23 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-white transition p-1 rounded-lg hover:bg-gray-800"
-          >
-            {closeIcon}
-          </button>
+          <div className="flex items-center gap-1">
+            {messages.length > 0 && (
+              <button
+                onClick={handleReset}
+                title="Reset conversation"
+                className="text-gray-500 hover:text-white transition p-1.5 rounded-lg hover:bg-gray-800"
+              >
+                {resetIcon}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-white transition p-1 rounded-lg hover:bg-gray-800"
+            >
+              {closeIcon}
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -311,7 +411,7 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
           <EmptyState />
         ) : (
           <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-            {messages.map(msg =>
+            {messages.map((msg, idx) =>
               msg.role === 'user'
                 ? <UserBubble key={msg.id} text={msg.text} />
                 : (
@@ -320,6 +420,8 @@ export default function AiPanel({ isOpen, onOpen, onClose }) {
                     msg={msg}
                     isDismissed={dismissedDiffs.has(msg.id)}
                     isApplied={appliedDiffs.has(msg.id)}
+                    showChips={showChips && idx === 0}
+                    onChipClick={chip => handleSend(chip)}
                     onApply={() => {
                       applyOverride(msg.revisedSchedule.days, msg.expiryDate)
                       setAppliedDiffs(prev => new Set(prev).add(msg.id))
